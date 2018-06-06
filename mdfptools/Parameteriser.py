@@ -119,7 +119,7 @@ class LiquidParameteriser(BaseParameteriser):
 	run = via_openeye
 
 class SolutionParameteriser(BaseParameteriser):
-	solvent_pmd = parmed.load_file("./tip3p.prmtop") #FIXME #TODO
+	solvent_pmd = parmed.load_file("./mdfptools/data/tip3p.prmtop") #FIXME #TODO
 
 	@classmethod
 	def via_openeye(cls, smiles):

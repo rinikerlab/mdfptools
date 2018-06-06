@@ -100,6 +100,7 @@ class SolutionLiquidComposer(BaseComposer):
 
         del self.kwargs_liq, self.kwargs_solv
 
+"""
 parm_path = '/home/shuwang/Documents/Modelling/MDFP/Codes/vapour_pressure/crc_handbook/corrupted/RU18.1_8645.pickle'
 parm = pickle.load(open(parm_path,"rb"))
 traj = md.load('/home/shuwang/Documents/Modelling/MDFP/Codes/vapour_pressure/crc_handbook/corrupted/RU18.1_8645.h5')[:10]
@@ -113,3 +114,4 @@ print(x.fp)
 print(x.__dict__)
 print(x.get_mdfp())
 pickle.dump(x, open("/home/shuwang/tmp.pickle", "wb"))
+"""
