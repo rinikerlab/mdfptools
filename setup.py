@@ -3,6 +3,9 @@ from os.path import relpath, join
 from setuptools import setup
 # import versioneer
 
+# https://python-packaging.readthedocs.io/en/latest/minimal.html
+# build package
+
 def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
 
