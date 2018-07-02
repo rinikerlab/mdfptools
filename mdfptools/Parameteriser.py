@@ -16,7 +16,27 @@ from pdbfixer import PDBFixer # for solvating
 # from rdkit import Chem
 import pickle
 import shutil
+import os
 ##############################################################
+def get_data_filename(relative_path): #TODO put in utils
+    """Get the full path to one of the reference files in testsystems.
+    In the source distribution, these files are in ``openforcefield/data/``,
+    but on installation, they're moved to somewhere in the user's python
+    site-packages directory.
+    Parameters
+    ----------
+    name : str
+        Name of the file to load (with respect to the repex folder).
+    """
+
+    from pkg_resources import resource_filename
+    fn = resource_filename('mdfptools', os.path.join('data', relative_path))
+
+    if not os.path.exists(fn):
+        raise ValueError("Sorry! %s does not exist. If you just added it, you'll have to re-install" % fn)
+
+    return fn
+
 class BaseParameteriser():
 	system_pmd = None
 
@@ -139,8 +159,7 @@ class BaseParameteriser():
 			               35:"Br", 53:"I"}
 
 			#directory, containing the models
-			model_dir = './mdfptools/data/'
-			cls.rf = {element : joblib.load(model_dir + elementdict[element] + ".model") for element in cls.element_list}
+			cls.rf = {element : joblib.load(get_data_filename(elementdict[element] + ".model")) for element in cls.element_list}
 
 		cls.charge_engine = cls._ddec_charger
 
@@ -296,7 +315,7 @@ class LiquidParameteriser(BaseParameteriser):
 	run = via_openeye
 
 class SolutionParameteriser(BaseParameteriser):
-	solvent_pmd = parmed.load_file("./mdfptools/data/tip3p.prmtop") #FIXME #TODO
+	solvent_pmd = parmed.load_file(get_data_filename("tip3p.prmtop")) #FIXME #TODO
 	default_padding = 1.25
 
 
