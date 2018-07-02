@@ -3,7 +3,8 @@ from sklearn.externals import joblib
 import sys
 
 def tree_to_code(tree, tree_number = 0, feature_names = ["var{}".format(i) for i in range(2048)]):
-    """https://stackoverflow.com/questions/20224526/how-to-extract-the-decision-rules-from-scikit-learn-decision-tree"""
+    """https://stackoverflow.com/questions/20224526/how-to-extract-the-decision-rules-from-scikit-learn-decision-tree
+    https://github.com/papkov/DecisionTreeToCpp/blob/master/example.py"""
     tree_ = tree.tree_
     feature_name = [
         feature_names[i] if i != _tree.TREE_UNDEFINED else "undefined!"

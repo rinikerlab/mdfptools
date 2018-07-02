@@ -38,9 +38,10 @@ class BaseParameteriser():
 		from rdkit.Chem import AllChem
 
 		cls.smiles = smiles
-		mol = Chem.MolFromSmiles(smiles, sanitize = False)
+		# mol = Chem.MolFromSmiles(smiles, sanitize = False)
+		mol = Chem.MolFromSmiles(smiles, sanitize = True)
 		mol.SetProp("_Name", cls.smiles)
-		mol.UpdatePropertyCache(strict=False)
+		# mol.UpdatePropertyCache()
 		mol = Chem.AddHs(mol)
 		# params = AllChem.ETKDG()
 		# params.enforceChirality = True
