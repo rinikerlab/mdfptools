@@ -61,7 +61,7 @@ class BaseParameteriser():
 		mol = Chem.MolFromSmiles(smiles, sanitize = False)
 		# mol = Chem.MolFromSmiles(smiles, sanitize = True)
 		mol.SetProp("_Name", cls.smiles)
-		mol.UpdatePropertyCache()
+		mol.UpdatePropertyCache(strict = False)
 		mol = Chem.AddHs(mol)
 		Chem.GetSSSR(mol)
 		# params = AllChem.ETKDG()
