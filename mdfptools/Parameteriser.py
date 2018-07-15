@@ -80,6 +80,8 @@ class BaseParameteriser():
 	def _rdkit_charger(cls, mol):
 		if not hasattr(cls, "charge_engine"):
 			raise ValueError("No Useable charge engine Exist")
+		# cls.mol = cls.charge_engine(mol)
+		# return cls.mol
 		return cls.charge_engine(mol)
 
 	@classmethod
@@ -127,6 +129,8 @@ class BaseParameteriser():
 			#TODO : integrate charges
 			charged_molecule = molecule
 			mol_top, mol_sys, mol_pos = create_system_from_molecule_rdk(mol_ff, charged_molecule)
+			cls.top = mol_top
+			cls.sys = mol_sys
 			molecule_structure = parmed.openmm.load_topology(mol_top, mol_sys, xyz=mol_pos)
 			return molecule_structure
 		try:
@@ -344,8 +348,8 @@ class SolutionParameteriser(BaseParameteriser):
 
 		tmp_dir = tempfile.mkdtemp()
 		cls.pdb_filename = tempfile.mktemp(suffix=".pdb", dir=tmp_dir)
-		PDBFile.writeFile(fixer.topology, fixer.positions, open(cls.pdb_filename, 'w'))
-
+		with open(cls.pdb_filename, "w") as f:
+			PDBFile.writeFile(fixer.topology, fixer.positions, f)
 		complex = parmed.load_file(cls.pdb_filename)
 
 		solvent = complex["(:HOH)"]

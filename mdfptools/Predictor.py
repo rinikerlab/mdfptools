@@ -1,6 +1,11 @@
 class BasePredictor():
     """Null model
     """
+    pass
+class SolutionPredictor(BasePredictor):
+    pass
+class LiquidPredictor(BasePredictor):
+    pass
 
 from sklearn.tree import _tree
 from sklearn.externals import joblib
@@ -17,7 +22,7 @@ x.feature[10:20]
 [i == _tree.TREE_UNDEFINED for i in x.feature]
 rfr.estimators_[1].__dict__
 
-def tree_to_code(tree, tree_number, feature_names = ["var{}".format(i) for i in range(2048)]):
+def tree_to_code(tree, tree_number = 0, feature_names = ["var{}".format(i) for i in range(2048)]):
     """https://stackoverflow.com/questions/20224526/how-to-extract-the-decision-rules-from-scikit-learn-decision-tree"""
     tree_ = tree.tree_
     feature_name = [
@@ -46,3 +51,10 @@ len(tree_.feature)
 from sklearn import tree
 tree.export_graphviz(rfr.estimators_[0], "/home/shuwang/sandbox/tmp")
 tree
+import numpy as np
+rfr.estimators_[0].predict([[0.1 for i in range(2048)]])
+
+rfr.estimators_[0].__dict__
+
+pickle.dump([i.predict for i in rfr.estimators_], open("/home/shuwang/sandbox/tmp.pickle", "wb"))
+joblib.dump([i.predict for i in rfr.estimators_], open("/home/shuwang/sandbox/tmp.pickle", "wb"), compress = 9)

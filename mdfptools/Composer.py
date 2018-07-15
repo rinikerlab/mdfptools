@@ -25,6 +25,8 @@ class BaseComposer():
         if m is None:
             m = Chem.MolFromSmiles(self.smiles, sanitize = False)
             m.UpdatePropertyCache(strict=False)
+            Chem.GetSSSR(m)
+
         fp = []
         fp.append(m.GetNumHeavyAtoms())
         fp.append(AllChem.CalcNumRotatableBonds(m))
@@ -50,9 +52,10 @@ class BaseComposer():
         return fp
 
 class MDFPComposer(BaseComposer):
-    def __init__(self, smiles, mdtraj_obj, parmed_obj):
+    def __init__(self, smiles, mdtraj_obj, parmed_obj, **kwargs):
         self.kwargs = {"mdtraj_obj" : mdtraj_obj ,
                         "parmed_obj" : parmed_obj}
+        self.kwargs = {**self.kwargs , **kwargs}
         super(MDFPComposer, self).__init__(smiles)
 
     def _get_relevant_properties(self):
@@ -64,9 +67,11 @@ class MDFPComposer(BaseComposer):
         del self.kwargs
 
 class LiquidComposer(BaseComposer):
-    def __init__(self, smiles, mdtraj_obj, parmed_obj):
+    # def __init__(self, smiles, mdtraj_obj, parmed_obj):
+    def __init__(self, smiles, mdtraj_obj, parmed_obj, **kwargs):
         self.kwargs = {"mdtraj_obj" : mdtraj_obj ,
                         "parmed_obj" : parmed_obj}
+        self.kwargs = {**self.kwargs , **kwargs}
         super(LiquidComposer, self).__init__(smiles)
 
     def _get_relevant_properties(self):
@@ -79,11 +84,13 @@ class LiquidComposer(BaseComposer):
         del self.kwargs
 
 class SolutionLiquidComposer(BaseComposer):
-    def __init__(self, smiles, solv_mdtraj_obj, solv_parmed_obj, liq_mdtraj_obj, liq_parmed_obj):
+    def __init__(self, smiles, solv_mdtraj_obj, solv_parmed_obj, liq_mdtraj_obj, liq_parmed_obj, **kwargs):
         self.kwargs_solv = {"mdtraj_obj" : solv_mdtraj_obj ,
                         "parmed_obj" : solv_parmed_obj}
         self.kwargs_liq = {"mdtraj_obj" : liq_mdtraj_obj ,
                         "parmed_obj" : liq_parmed_obj}
+        self.kwargs_liq = {**self.kwargs_liq , **kwargs}
+        self.kwargs_solv = {**self.kwargs_solv , **kwargs}
         super(SolutionLiquidComposer, self).__init__(smiles)
 
     def _get_relevant_properties(self):
