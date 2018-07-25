@@ -5,7 +5,7 @@ from simtk.openmm.app import *
 # from simtk.openmm.app import PDBReporter
 import mdtraj as md
 from mdtraj.reporters import HDF5Reporter
-from mdfptools.Parameteriser import SolutionParameteriser
+from mdfptools.Parameteriser import *
 from mdfptools.Composer import MDFPComposer
 
 def simulate(pmd, hash_code):
@@ -51,5 +51,7 @@ def simulate(pmd, hash_code):
     simulation.step(5000 * 500)
 
     return path
-pmd = SolutionParameteriser().run("CC")
+smiles = "[O]=[C]1-[NH]-[C](=[O])-[c]2:[cH]:[cH]:[cH]:[cH]:[c]:2-1"
+# pmd = SolutionParameteriser.run(smiles)
+pmd = VaccumParameteriser.run(smiles)
 simulate(pmd, "tmp")
