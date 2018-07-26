@@ -52,6 +52,7 @@ def simulate(pmd, hash_code):
 
     return path
 smiles = "[O]=[C]1-[NH]-[C](=[O])-[c]2:[cH]:[cH]:[cH]:[cH]:[c]:2-1"
-# pmd = SolutionParameteriser.run(smiles)
-pmd = VaccumParameteriser.run(smiles)
+smiles = "[CH2]=[O]"
+pmd = SolutionParameteriser.run(smiles)
+# pmd = VaccumParameteriser.run(smiles)
 simulate(pmd, "tmp")
