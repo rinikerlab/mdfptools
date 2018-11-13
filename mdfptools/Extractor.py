@@ -424,8 +424,12 @@ class BaseExtractor():
 
     @classmethod
     def extract_sasa(cls, mdtraj_obj, **kwargs):
+        """
+            assumes the first res in system is the solute
+        """
         df = {}
-        df["{}_sasa".format(cls.string_identifier)] = list(md.compute_rg(mdtraj_obj.atom_slice(mdtraj_obj.topology.select("resid 0"))))
+        #df["{}_sasa".format(cls.string_identifier)] = list(md.compute_rg(mdtraj_obj.atom_slice(mdtraj_obj.topology.select("resid 0")))) # this was what I had before which should be incorrect
+        df["{}_sasa".format(cls.string_identifier)] = list(md.shrake_rupley(mdtraj_obj.atom_slice(mdtraj_obj.topology.select("resid 0")), mode = "residue"))
         return df
 
 
