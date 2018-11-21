@@ -276,7 +276,7 @@ class LiquidParameteriser(BaseParameteriser):
 
 class SolutionParameteriser(BaseParameteriser):
     solvent_pmd = parmed.load_file(get_data_filename("tip3p.prmtop")) #FIXME #TODO
-    default_padding = 1.25
+    default_padding = 1.25 #nm
 
 
     @classmethod

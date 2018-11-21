@@ -538,6 +538,23 @@ class SolutionExtractor(BaseExtractor):
             pass
         return solute_1_4_pairs,solvent_1_4_pairs, solute_excluded_pairs, solvent_excluded_pairs, solute_self_pairs, solvent_self_pairs
 
+
+    @classmethod
+    def extract_dipole(cls, mdtraj_obj, parmed_obj, **kwargs):
+        solute_atoms, _ = cls.solute_solvent_split()
+        solute_atoms = list(solute_atoms)
+
+        df = {}
+        charges = [i.charge for idx,i in enumerate(parmed_obj.atoms) if idx in solute_atoms ]
+        new_traj = mdtraj_obj.atom_slice(solute_atoms)
+
+        output = md.dipole_moments(new_traj, charges)
+
+        df["{}_dipole_x".format(cls.string_identifier)] = output[:,0]
+        df["{}_dipole_y".format(cls.string_identifier)] = output[:,1]
+        df["{}_dipole_z".format(cls.string_identifier)] = output[:,2]
+        df["{}_dipole_magnitude".format(cls.string_identifier)] = [np.linalg.norm(i) for i in output]
+        return df
 ###############################################
 ###############################################
 
@@ -562,7 +579,7 @@ class LiquidExtractor(BaseExtractor):
         df = {}
         #TODO
         charges = [i.charge for i in parmed_obj.atoms]
-        df["{}_dipole".format(cls.string_identifier)] = [np.linalg.norm(i) for i in md.dipole_moments(mdtraj_obj, charges)]
+        df["{}_dipole_magnitude".format(cls.string_identifier)] = [np.linalg.norm(i) for i in md.dipole_moments(mdtraj_obj, charges)]
         return df
 
     @classmethod
