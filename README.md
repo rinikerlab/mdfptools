@@ -6,5 +6,6 @@ In order to use the scikit-learn trained DDec partial charge models, install the
 
 
 ### TODOs:
+- **addition on counter ions**
 - error catching for parsing SMILES
 - move ddec charging into new repo (done)
