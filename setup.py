@@ -1,42 +1,42 @@
-import os
-from os.path import relpath, join
+"""
+mdfptools
+python implementation of molecular dynamics fingerprints as delineated in https://pubs.acs.org/doi/10.1021/acs.jcim.6b00778
+"""
 from setuptools import setup
-# import versioneer
+import versioneer
 
-# https://python-packaging.readthedocs.io/en/latest/minimal.html
-# build package
+DOCLINES = __doc__.split("\n")
 
-def read(fname):
-    return open(os.path.join(os.path.dirname(__file__), fname)).read()
+setup(
+    # Self-descriptive entries which should always be present
+    name='mdfptools',
+    author='shuzhe Wang',
+    description=DOCLINES[0],
+    long_description="\n".join(DOCLINES[2:]),
+    version=versioneer.get_version(),
+    cmdclass=versioneer.get_cmdclass(),
+    license='MIT',
 
-def find_package_data(data_root, package_root):
-    files = []
-    for root, dirnames, filenames in os.walk(data_root):
-        for fn in filenames:
-            files.append(relpath(join(root, fn), package_root))
-    return files
+    # Which Python importable modules should be included when your package is installed
+    packages=['mdfptools', "mdfptools.tests"],
 
+    # Optional include package data to ship with your package
+    # Comment out this line to prevent the files from being packaged with your software
+    # Extend/modify the list to include/exclude other items as need be
+    package_data={'mdfptools': ["data/*.dat"]
+                  },
 
-setup(name='mdfptools',
-      version='0.1',
-      description='', #TODO
-      url='http://github.com/hjuinj/mdfptools',
-      author='Shuzhe Wang',
-      author_email='shuzhe.wang@phys.chem.ethz.ch',
-      license='MIT',
-    packages=[
-        'mdfptools',
-        'mdfptools/tests',
-        'mdfptools/data',
-        ],
-    long_description=read('README.md'),
-    classifiers=[
-        "Development Status :: 3 - Alpha",
-        "Topic :: Utilities",
-        "License :: OSI Approved :: MIT",
-    ],
-    entry_points={'console_scripts': []},
-    package_data={'mdfptools': find_package_data('mdfptools/data', 'mdfptools')},
-    # version=versioneer.get_version(),
-    # cmdclass=versioneer.get_cmdclass(),
-    )
+    # Additional entries you may want simply uncomment the lines you want and fill in the data
+    # author_email='me@place.org',      # Author email
+    # url='http://www.my_package.com',  # Website
+    # install_requires=[],              # Required packages, pulls from pip if needed; do not use for Conda deployment
+    # platforms=['Linux',
+    #            'Mac OS-X',
+    #            'Unix',
+    #            'Windows'],            # Valid platforms your code works on, adjust to your flavor
+    # python_requires=">=3.5",          # Python version restrictions
+
+    # Manual control if final package is compressible or not, set False to prevent the .egg from being made
+    # zip_safe=False,
+
+)

@@ -1,11 +1,17 @@
-# MDFPtools
+mdfptools
+==============================
+[//]: # (Badges)
+[![Travis Build Status](https://travis-ci.org/REPLACE_WITH_OWNER_ACCOUNT/mdfptools.png)](https://travis-ci.org/REPLACE_WITH_OWNER_ACCOUNT/mdfptools)
+[![codecov](https://codecov.io/gh/REPLACE_WITH_OWNER_ACCOUNT/mdfptools/branch/master/graph/badge.svg)](https://codecov.io/gh/REPLACE_WITH_OWNER_ACCOUNT/mdfptools/branch/master)
 
-### DDec Charging Model
-In order to use the scikit-learn trained DDec partial charge models, install the [mlddec](https://github.com/hjuinj/mlddec) repository, ~~[git lfs](https://github.com/git-lfs/git-lfs/wiki/Installation) installation is needed as some of the models are bigger than the single file size restriction set by github (e.g. Carbon model > 400 mb)~~
+python implementation of molecular dynamics fingerprints as delineated in https://pubs.acs.org/doi/10.1021/acs.jcim.6b00778
+
+### Copyright
+
+Copyright (c) 2018, shuzhe Wang
 
 
-
-### TODOs:
-- **addition on counter ions**
-- error catching for parsing SMILES
-- move ddec charging into new repo (done)
+#### Acknowledgements
+ 
+Project based on the 
+[Computational Molecular Science Python Cookiecutter](https://github.com/molssi/cookiecutter-cms)
