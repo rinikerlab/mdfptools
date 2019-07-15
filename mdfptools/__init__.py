@@ -10,6 +10,8 @@ from __future__ import absolute_import
 # Add imports here
 from .mdfptools import *
 
+from . import Composer, Parameteriser, Extractor, Simulator, utils
+
 # Handle versioneer
 from ._version import get_versions
 versions = get_versions()
