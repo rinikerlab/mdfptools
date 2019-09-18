@@ -108,7 +108,7 @@ class BaseParameteriser():
         """
 
         try:
-            forcefield = ForceField('smirnoff99Frosst.offxml')
+            forcefield = ForceField('test_forcefields/smirnoff99Frosst.offxml')
             molecule = Molecule.from_rdkit(mol)
             if hasattr(cls, "_ddec_charger"):
                 molecule.partial_charges = unit.Quantity(np.array(cls._ddec_charger(mol, cls.rf)), unit.elementary_charge)
@@ -200,7 +200,7 @@ class BaseParameteriser():
     @classmethod
     def _openeye_parameteriser(cls, mol):
         try:
-            forcefield = ForceField('smirnoff99Frosst.offxml')
+            forcefield = ForceField('test_forcefields/smirnoff99Frosst.offxml')
             molecule = Molecule.from_openeye(mol)
             from openforcefield.utils.toolkits import OpenEyeToolkitWrapper
             molecule.compute_partial_charges_am1bcc(toolkit_registry = OpenEyeToolkitWrapper())
