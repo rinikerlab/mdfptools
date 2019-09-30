@@ -19,6 +19,12 @@ class BaseComposer():
     import functools
 
     def __init__(self, smiles ):
+        """
+        Parameters
+        ----------
+        smiles : str
+            SMILES string of the solute molecule
+        """
         self.smiles = smiles
         self.fp = {}
         self._get_relevant_properties()
