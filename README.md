@@ -9,6 +9,10 @@ mfptools
 
 python implementation of molecular dynamics fingerprints as delineated in https://pubs.acs.org/doi/10.1021/acs.jcim.6b00778
 
+To use the machine-learned partial charged devleoped in our labs, install the [mlddec package](github.com/rinikierlab/mlddec).
+
+
+
 ### Copyright
 
 Copyright (c) 2018, shuzhe Wang
