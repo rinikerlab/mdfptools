@@ -3,8 +3,18 @@ from rdkit.Chem import AllChem
 # from Per_Frame_Property_Extractor import *
 from .Extractor import *
 
+"""
+Post-processing of simulation trajectories to form (compose) molecular dynamic fingerprints (MDFPs)
+
+
+"""
 
 class BaseComposer():
+    """
+    Base class containing functions that can be used by different composers for different types of simulations
+
+    .. warning :: The base class should not be used directly
+    """
     from numpy import mean, std, median
     import functools
 
