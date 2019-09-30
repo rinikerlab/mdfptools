@@ -43,14 +43,6 @@ mdfptools.Simulator module
    :undoc-members:
    :show-inheritance:
 
-mdfptools.mdfptools module
---------------------------
-
-.. automodule:: mdfptools.mdfptools
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 mdfptools.utils module
 ----------------------
 
