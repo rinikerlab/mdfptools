@@ -1,4 +1,5 @@
 import tempfile
+
 # import contextlib
 
 from simtk import unit #Unit handling for OpenMM
@@ -13,32 +14,19 @@ import parmed
 # from rdkit import Chem
 import pickle
 import shutil
-import os
+# import os
 import numpy as np
+# import mdfptools
+# from mdfptools.utils import get_data_filename
+# from .utils import get_data_filename
+# from utils import get_data_filename
+from mdfptools.utils import get_data_filename
 """
 TODOs:
     - proper handling of tip3p water loading
 
 """
 ##############################################################
-def get_data_filename(relative_path): #TODO put in utils
-    """Get the full path to one of the reference files in testsystems.
-    In the source distribution, these files are in ``openforcefield/data/``,
-    but on installation, they're moved to somewhere in the user's python
-    site-packages directory.
-    Parameters
-    ----------
-    name : str
-        Name of the file to load (with respect to the repex folder).
-    """
-
-    from pkg_resources import resource_filename
-    fn = resource_filename('mdfptools', os.path.join('data', relative_path))
-
-    if not os.path.exists(fn):
-        raise ValueError("Sorry! %s does not exist. If you just added it, you'll have to re-install" % fn)
-
-    return fn
 
 class BaseParameteriser():
     system_pmd = None
@@ -221,6 +209,7 @@ class BaseParameteriser():
         # We need all molecules as both pdb files (as packmol input)
         # and mdtraj.Trajectory for restoring bonds later.
         pdb_filename = tempfile.mktemp(suffix=".pdb", dir=tmp_dir)
+        from openeye import oechem # OpenEye Python toolkits
         oechem.OEWriteMolecule( oechem.oemolostream( pdb_filename ), mol)
         cls.pdb_filename = pdb_filename
         cls.ligand_pmd = ligand_pmd
@@ -273,6 +262,7 @@ class LiquidParameteriser(BaseParameteriser):
         except Exception as e:
             print("Error due to : {}".format(e))
 
+        cls.system_pmd.title = cls.smiles
         return cls.system_pmd
 
     run = via_openeye
@@ -298,17 +288,17 @@ class SolutionParameteriser(BaseParameteriser):
         # mol = cls._openeye_charger(mol)
         cls._openeye_parameteriser(mol)
 
-        return cls.pmd_generator(**kwargs)
+        return cls._via_helper(**kwargs)
 
     @classmethod
     def via_rdkit(cls, smiles, **kwargs):
         mol = cls._rdkit_setter(smiles)
         # mol = cls._rdkit_charger(mol)
         cls._rdkit_parameteriser(mol)
-        return cls.pmd_generator(**kwargs)
+        return cls._via_helper(**kwargs)
 
     @classmethod
-    def pmd_generator(cls, **kwargs):
+    def _via_helper(cls, **kwargs):
         from pdbfixer import PDBFixer # for solvating
 
         fixer = PDBFixer(cls.pdb_filename)
@@ -338,6 +328,7 @@ class SolutionParameteriser(BaseParameteriser):
         except:
             pass
 
+        cls.system_pmd.title = cls.smiles
         return cls.system_pmd
 
 
@@ -352,6 +343,7 @@ class VaccumParameteriser(BaseParameteriser):
 
         cls.system_pmd = cls.ligand_pmd
 
+        cls.system_pmd.title = cls.smiles
         return cls.system_pmd
 
 
@@ -363,6 +355,7 @@ class VaccumParameteriser(BaseParameteriser):
 
         cls.system_pmd = cls.ligand_pmd
 
+        cls.system_pmd.title = cls.smiles
         return cls.system_pmd
 
     run = via_openeye

@@ -1,7 +1,7 @@
 from rdkit import Chem
 from rdkit.Chem import AllChem
 # from Per_Frame_Property_Extractor import *
-from .Extractor import *
+from mdfptools.Extractor import *
 
 """
 Post-processing of simulation trajectories to form (compose) molecular dynamic fingerprints (MDFPs)
@@ -22,6 +22,7 @@ class BaseComposer():
         """
         Parameters
         ----------
+
         smiles : str
             SMILES string of the solute molecule
         """
@@ -30,13 +31,34 @@ class BaseComposer():
         self._get_relevant_properties()
 
     def get_mdfp(self):
+        """
+        Parameters
+        ----------
+
+        smiles : str
+            SMILES string of the solute molecule
+        """
         #TODO # self.vector_indices = []
         return functools.reduce(lambda a, b : a + b, self.fp.values())
 
     def _get_relevant_properties(self):
+        """
+        Parameters
+        ----------
+
+        smiles : str
+            SMILES string of the solute molecule
+        """
         self.fp  = {**self.fp, **self._get_2d_descriptors()}
 
     def _get_2d_descriptors(self):
+        """
+        Parameters
+        ----------
+
+        smiles : str
+            SMILES string of the solute molecule
+        """
         m = Chem.MolFromSmiles(self.smiles, sanitize = True)
         if m is None:
             m = Chem.MolFromSmiles(self.smiles, sanitize = False)
@@ -58,6 +80,13 @@ class BaseComposer():
 
 
     def _get_statistical_moments(self, property_extractor, statistical_moments = [mean, std, median], **kwargs):
+        """
+        Parameters
+        ----------
+
+        smiles : str
+            SMILES string of the solute molecule
+        """
         self.statistical_moments = [i.__name__ for i in statistical_moments]
         fp = {}
         prop = property_extractor(**kwargs)
@@ -67,6 +96,7 @@ class BaseComposer():
                  fp[i].append(func(prop[i]))
         return fp
 
+"""
 class TrialSolutionComposer(BaseComposer):
     def __init__(self, smiles, mdtraj_obj, parmed_obj, **kwargs):
         self.kwargs = {"mdtraj_obj" : mdtraj_obj ,
@@ -80,13 +110,20 @@ class TrialSolutionComposer(BaseComposer):
         self.fp  = {**self.fp, **self._get_statistical_moments(WaterExtractor.extract_sasa, **self.kwargs)}
 
         del self.kwargs
+"""
 
 class MDFPComposer(BaseComposer):
-    def __init__(self, smiles, mdtraj_obj, parmed_obj, **kwargs):
+    def __init__(self, mdtraj_obj, parmed_obj, smiles = None, **kwargs):
         self.kwargs = {"mdtraj_obj" : mdtraj_obj ,
                         "parmed_obj" : parmed_obj}
         self.kwargs = {**self.kwargs , **kwargs}
-        super(MDFPComposer, self).__init__(smiles)
+        if smiles is None: #try to obtain it from `parmed_obj`
+            try:
+                super(MDFPComposer, self).__init__(parmed_obj.title)
+            except:
+                print("Input ParMed Object does not contain SMILES string, add SMILES as an additional variable")
+        else:
+            super(MDFPComposer, self).__init__(smiles)
 
     def _get_relevant_properties(self):
         self.fp  = {**self.fp, **self._get_2d_descriptors()}
@@ -98,11 +135,17 @@ class MDFPComposer(BaseComposer):
 
 class LiquidComposer(BaseComposer):
     # def __init__(self, smiles, mdtraj_obj, parmed_obj):
-    def __init__(self, smiles, mdtraj_obj, parmed_obj, **kwargs):
+    def __init__(self, mdtraj_obj, parmed_obj, smiles = None, **kwargs):
         self.kwargs = {"mdtraj_obj" : mdtraj_obj ,
                         "parmed_obj" : parmed_obj}
         self.kwargs = {**self.kwargs , **kwargs}
-        super(LiquidComposer, self).__init__(smiles)
+        if smiles is None: #try to obtain it from `parmed_obj`
+            try:
+                super(LiquidComposer, self).__init__(parmed_obj.title)
+            except:
+                print("Input ParMed Object does not contain SMILES string, add SMILES as an additional variable")
+        else:
+            super(LiquidComposer, self).__init__(smiles)
 
     def _get_relevant_properties(self):
         self.fp  = {**self.fp, **self._get_2d_descriptors()}
@@ -114,14 +157,21 @@ class LiquidComposer(BaseComposer):
         del self.kwargs
 
 class SolutionLiquidComposer(BaseComposer):
-    def __init__(self, smiles, solv_mdtraj_obj, solv_parmed_obj, liq_mdtraj_obj, liq_parmed_obj, **kwargs):
+    def __init__(self, solv_mdtraj_obj, solv_parmed_obj, liq_mdtraj_obj, liq_parmed_obj, smiles = None, **kwargs):
         self.kwargs_solv = {"mdtraj_obj" : solv_mdtraj_obj ,
                         "parmed_obj" : solv_parmed_obj}
         self.kwargs_liq = {"mdtraj_obj" : liq_mdtraj_obj ,
                         "parmed_obj" : liq_parmed_obj}
         self.kwargs_liq = {**self.kwargs_liq , **kwargs}
         self.kwargs_solv = {**self.kwargs_solv , **kwargs}
-        super(SolutionLiquidComposer, self).__init__(smiles)
+
+        if smiles is None: #try to obtain it from `parmed_obj`
+            try:
+                super(SolutionLiquidComposer, self).__init__(parmed_obj.title)
+            except:
+                print("Input ParMed Object does not contain SMILES string, add SMILES as an additional variable")
+        else:
+            super(SolutionLiquidComposer, self).__init__(smiles)
 
     def _get_relevant_properties(self):
         self.fp  = {**self.fp, **self._get_2d_descriptors()}
