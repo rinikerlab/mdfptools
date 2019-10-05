@@ -1,47 +1,50 @@
 from rdkit import Chem
 from rdkit.Chem import AllChem
 # from Per_Frame_Property_Extractor import *
-from mdfptools.Extractor import *
+from .Extractor import *
 
-"""
-Post-processing of simulation trajectories to form (compose) molecular dynamic fingerprints (MDFPs)
+from numpy import mean, std, median
+import functools
 
-
-"""
-
-class BaseComposer():
+class MDFP():
     """
-    Base class containing functions that can be used by different composers for different types of simulations
-
-    .. warning :: The base class should not be used directly
+    .. todo::
+        - method to give back the keys
+        - store some metdadata?
     """
-    from numpy import mean, std, median
-    import functools
-
-    def __init__(self, smiles ):
-        """
-        Parameters
-        ----------
-
-        smiles : str
-            SMILES string of the solute molecule
-        """
-        self.smiles = smiles
-        self.fp = {}
-        self._get_relevant_properties()
+    def __init__(self, dict):
+        self.fp = dict
 
     def get_mdfp(self):
         """
-        Parameters
+        Returns
         ----------
-
-        smiles : str
-            SMILES string of the solute molecule
+        a list of floating values, i.e. the mdfp feature vector
         """
-        #TODO # self.vector_indices = []
         return functools.reduce(lambda a, b : a + b, self.fp.values())
 
-    def _get_relevant_properties(self):
+class BaseComposer():
+    """
+    The BaseComposer class containing functions that can be used by different composers for different types of simulations
+
+    """
+
+    @classmethod
+    def run(cls, smiles ):
+        """
+        Parameters
+        ----------
+        smiles : str
+            SMILES string of the solute molecule
+        """
+        cls.smiles = smiles
+        cls.fp = {}
+        cls._get_relevant_properties()
+
+        return MDFP(cls.fp)
+
+    @classmethod
+    def _get_relevant_properties(cls):
         """
         Parameters
         ----------
@@ -49,9 +52,10 @@ class BaseComposer():
         smiles : str
             SMILES string of the solute molecule
         """
-        self.fp  = {**self.fp, **self._get_2d_descriptors()}
+        cls.fp  = {**cls.fp, **cls._get_2d_descriptors()}
 
-    def _get_2d_descriptors(self):
+    @classmethod
+    def _get_2d_descriptors(cls):
         """
         Parameters
         ----------
@@ -59,9 +63,9 @@ class BaseComposer():
         smiles : str
             SMILES string of the solute molecule
         """
-        m = Chem.MolFromSmiles(self.smiles, sanitize = True)
+        m = Chem.MolFromSmiles(cls.smiles, sanitize = True)
         if m is None:
-            m = Chem.MolFromSmiles(self.smiles, sanitize = False)
+            m = Chem.MolFromSmiles(cls.smiles, sanitize = False)
             m.UpdatePropertyCache(strict=False)
             Chem.GetSSSR(m)
 
@@ -79,7 +83,8 @@ class BaseComposer():
         return {"2d_counts" : fp}
 
 
-    def _get_statistical_moments(self, property_extractor, statistical_moments = [mean, std, median], **kwargs):
+    @classmethod
+    def _get_statistical_moments(cls, property_extractor, statistical_moments = [mean, std, median], **kwargs):
         """
         Parameters
         ----------
@@ -87,7 +92,7 @@ class BaseComposer():
         smiles : str
             SMILES string of the solute molecule
         """
-        self.statistical_moments = [i.__name__ for i in statistical_moments]
+        cls.statistical_moments = [i.__name__ for i in statistical_moments]
         fp = {}
         prop = property_extractor(**kwargs)
         for i in prop:
@@ -98,94 +103,103 @@ class BaseComposer():
 
 """
 class TrialSolutionComposer(BaseComposer):
-    def __init__(self, smiles, mdtraj_obj, parmed_obj, **kwargs):
-        self.kwargs = {"mdtraj_obj" : mdtraj_obj ,
+    def __init__(cls, smiles, mdtraj_obj, parmed_obj, **kwargs):
+        cls.kwargs = {"mdtraj_obj" : mdtraj_obj ,
                         "parmed_obj" : parmed_obj}
-        self.kwargs = {**self.kwargs , **kwargs}
-        super(TrialSolutionComposer, self).__init__(smiles)
-    def _get_relevant_properties(self):
-        self.fp  = {**self.fp, **self._get_2d_descriptors()}
-        self.fp  = {**self.fp, **self._get_statistical_moments(TrialSolutionExtractor.extract_energies, **self.kwargs)}
-        self.fp  = {**self.fp, **self._get_statistical_moments(WaterExtractor.extract_rgyr, **self.kwargs)}
-        self.fp  = {**self.fp, **self._get_statistical_moments(WaterExtractor.extract_sasa, **self.kwargs)}
+        cls.kwargs = {**cls.kwargs , **kwargs}
+        super(TrialSolutionComposer, cls).__init__(smiles)
+    def _get_relevant_properties(cls):
+        cls.fp  = {**cls.fp, **cls._get_2d_descriptors()}
+        cls.fp  = {**cls.fp, **cls._get_statistical_moments(TrialSolutionExtractor.extract_energies, **cls.kwargs)}
+        cls.fp  = {**cls.fp, **cls._get_statistical_moments(WaterExtractor.extract_rgyr, **cls.kwargs)}
+        cls.fp  = {**cls.fp, **cls._get_statistical_moments(WaterExtractor.extract_sasa, **cls.kwargs)}
 
-        del self.kwargs
+        del cls.kwargs
 """
 
-class MDFPComposer(BaseComposer):
-    def __init__(self, mdtraj_obj, parmed_obj, smiles = None, **kwargs):
-        self.kwargs = {"mdtraj_obj" : mdtraj_obj ,
+# class MDFPComposer(BaseComposer):
+class SolutionComposer(BaseComposer):
+    """
+    Generates fingerprint most akin to that from the original publication
+    """
+    @classmethod
+    def run(cls, mdtraj_obj, parmed_obj, smiles = None, **kwargs):
+        cls.kwargs = {"mdtraj_obj" : mdtraj_obj ,
                         "parmed_obj" : parmed_obj}
-        self.kwargs = {**self.kwargs , **kwargs}
-        if smiles is None: #try to obtain it from `parmed_obj`
-            try:
-                super(MDFPComposer, self).__init__(parmed_obj.title)
-            except:
-                print("Input ParMed Object does not contain SMILES string, add SMILES as an additional variable")
+        cls.kwargs = {**cls.kwargs , **kwargs}
+        if smiles is None:
+            if parmed_obj.title != '': #try to obtain it from `parmed_obj`
+                smiles = parmed_obj.title
+            else:
+                raise ValueError("Input ParMed Object does not contain SMILES string, add SMILES as an additional variable")
         else:
-            super(MDFPComposer, self).__init__(smiles)
+            return super().run(smiles)
 
-    def _get_relevant_properties(self):
-        self.fp  = {**self.fp, **self._get_2d_descriptors()}
-        self.fp  = {**self.fp, **self._get_statistical_moments(WaterExtractor.extract_energies, **self.kwargs)}
-        self.fp  = {**self.fp, **self._get_statistical_moments(WaterExtractor.extract_rgyr, **self.kwargs)}
-        self.fp  = {**self.fp, **self._get_statistical_moments(WaterExtractor.extract_sasa, **self.kwargs)}
-
-        del self.kwargs
+    @classmethod
+    def _get_relevant_properties(cls):
+        cls.fp  = {**cls.fp, **cls._get_2d_descriptors()}
+        cls.fp  = {**cls.fp, **cls._get_statistical_moments(WaterExtractor.extract_energies, **cls.kwargs)}
+        cls.fp  = {**cls.fp, **cls._get_statistical_moments(WaterExtractor.extract_rgyr, **cls.kwargs)}
+        cls.fp  = {**cls.fp, **cls._get_statistical_moments(WaterExtractor.extract_sasa, **cls.kwargs)}
+        del cls.kwargs
 
 class LiquidComposer(BaseComposer):
-    # def __init__(self, smiles, mdtraj_obj, parmed_obj):
-    def __init__(self, mdtraj_obj, parmed_obj, smiles = None, **kwargs):
-        self.kwargs = {"mdtraj_obj" : mdtraj_obj ,
+    # def __init__(cls, smiles, mdtraj_obj, parmed_obj):
+    @classmethod
+    def run(cls, mdtraj_obj, parmed_obj, smiles = None, **kwargs):
+        cls.kwargs = {"mdtraj_obj" : mdtraj_obj ,
                         "parmed_obj" : parmed_obj}
-        self.kwargs = {**self.kwargs , **kwargs}
-        if smiles is None: #try to obtain it from `parmed_obj`
-            try:
-                super(LiquidComposer, self).__init__(parmed_obj.title)
-            except:
-                print("Input ParMed Object does not contain SMILES string, add SMILES as an additional variable")
+        cls.kwargs = {**cls.kwargs , **kwargs}
+        if smiles is None:
+            if parmed_obj.title != '': #try to obtain it from `parmed_obj`
+                smiles = parmed_obj.title
+            else:
+                raise ValueError("Input ParMed Object does not contain SMILES string, add SMILES as an additional variable")
         else:
-            super(LiquidComposer, self).__init__(smiles)
+            return super().run(smiles)
 
-    def _get_relevant_properties(self):
-        self.fp  = {**self.fp, **self._get_2d_descriptors()}
-        self.fp  = {**self.fp, **self._get_statistical_moments(LiquidExtractor.extract_energies, **self.kwargs)}
-        self.fp  = {**self.fp, **self._get_statistical_moments(LiquidExtractor.extract_rgyr, **self.kwargs)}
-        self.fp  = {**self.fp, **self._get_statistical_moments(LiquidExtractor.extract_sasa, **self.kwargs)}
-        self.fp  = {**self.fp, **self._get_statistical_moments(LiquidExtractor.extract_dipole_magnitude, **self.kwargs)}
+    @classmethod
+    def _get_relevant_properties(cls):
+        cls.fp  = {**cls.fp, **cls._get_2d_descriptors()}
+        cls.fp  = {**cls.fp, **cls._get_statistical_moments(LiquidExtractor.extract_energies, **cls.kwargs)}
+        cls.fp  = {**cls.fp, **cls._get_statistical_moments(LiquidExtractor.extract_rgyr, **cls.kwargs)}
+        cls.fp  = {**cls.fp, **cls._get_statistical_moments(LiquidExtractor.extract_sasa, **cls.kwargs)}
+        cls.fp  = {**cls.fp, **cls._get_statistical_moments(LiquidExtractor.extract_dipole_magnitude, **cls.kwargs)}
 
-        del self.kwargs
+        del cls.kwargs
 
 class SolutionLiquidComposer(BaseComposer):
-    def __init__(self, solv_mdtraj_obj, solv_parmed_obj, liq_mdtraj_obj, liq_parmed_obj, smiles = None, **kwargs):
-        self.kwargs_solv = {"mdtraj_obj" : solv_mdtraj_obj ,
+    @classmethod
+    def __init__(cls, solv_mdtraj_obj, solv_parmed_obj, liq_mdtraj_obj, liq_parmed_obj, smiles = None, **kwargs):
+        cls.kwargs_solv = {"mdtraj_obj" : solv_mdtraj_obj ,
                         "parmed_obj" : solv_parmed_obj}
-        self.kwargs_liq = {"mdtraj_obj" : liq_mdtraj_obj ,
+        cls.kwargs_liq = {"mdtraj_obj" : liq_mdtraj_obj ,
                         "parmed_obj" : liq_parmed_obj}
-        self.kwargs_liq = {**self.kwargs_liq , **kwargs}
-        self.kwargs_solv = {**self.kwargs_solv , **kwargs}
+        cls.kwargs_liq = {**cls.kwargs_liq , **kwargs}
+        cls.kwargs_solv = {**cls.kwargs_solv , **kwargs}
 
-        if smiles is None: #try to obtain it from `parmed_obj`
-            try:
-                super(SolutionLiquidComposer, self).__init__(parmed_obj.title)
-            except:
-                print("Input ParMed Object does not contain SMILES string, add SMILES as an additional variable")
+        if smiles is None:
+            if parmed_obj.title != '': #try to obtain it from `parmed_obj`
+                smiles = parmed_obj.title
+            else:
+                raise ValueError("Input ParMed Object does not contain SMILES string, add SMILES as an additional variable")
         else:
-            super(SolutionLiquidComposer, self).__init__(smiles)
+            return super().run(smiles)
 
-    def _get_relevant_properties(self):
-        self.fp  = {**self.fp, **self._get_2d_descriptors()}
+    @classmethod
+    def _get_relevant_properties(cls):
+        cls.fp  = {**cls.fp, **cls._get_2d_descriptors()}
 
-        self.fp  = {**self.fp, **self._get_statistical_moments(WaterExtractor.extract_energies, **self.kwargs_solv)}
-        self.fp  = {**self.fp, **self._get_statistical_moments(WaterExtractor.extract_rgyr, **self.kwargs_solv)}
-        self.fp  = {**self.fp, **self._get_statistical_moments(WaterExtractor.extract_sasa, **self.kwargs_solv)}
+        cls.fp  = {**cls.fp, **cls._get_statistical_moments(WaterExtractor.extract_energies, **cls.kwargs_solv)}
+        cls.fp  = {**cls.fp, **cls._get_statistical_moments(WaterExtractor.extract_rgyr, **cls.kwargs_solv)}
+        cls.fp  = {**cls.fp, **cls._get_statistical_moments(WaterExtractor.extract_sasa, **cls.kwargs_solv)}
 
-        self.fp  = {**self.fp, **self._get_statistical_moments(LiquidExtractor.extract_energies, **self.kwargs_liq)}
-        self.fp  = {**self.fp, **self._get_statistical_moments(LiquidExtractor.extract_rgyr, **self.kwargs_liq)}
-        self.fp  = {**self.fp, **self._get_statistical_moments(LiquidExtractor.extract_sasa, **self.kwargs_liq)}
-        self.fp  = {**self.fp, **self._get_statistical_moments(LiquidExtractor.extract_dipole_magnitude, **self.kwargs_liq)}
+        cls.fp  = {**cls.fp, **cls._get_statistical_moments(LiquidExtractor.extract_energies, **cls.kwargs_liq)}
+        cls.fp  = {**cls.fp, **cls._get_statistical_moments(LiquidExtractor.extract_rgyr, **cls.kwargs_liq)}
+        cls.fp  = {**cls.fp, **cls._get_statistical_moments(LiquidExtractor.extract_sasa, **cls.kwargs_liq)}
+        cls.fp  = {**cls.fp, **cls._get_statistical_moments(LiquidExtractor.extract_dipole_magnitude, **cls.kwargs_liq)}
 
-        del self.kwargs_liq, self.kwargs_solv
+        del cls.kwargs_liq, cls.kwargs_solv
 
 """
 parm_path = '/home/shuwang/Documents/Modelling/MDFP/Codes/vapour_pressure/crc_handbook/corrupted/RU18.1_8645.pickle'
