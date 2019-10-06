@@ -1,0 +1,4 @@
+numpydoc
+recommonmark
+nbsphinx
+nbsphinx_link
