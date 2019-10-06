@@ -8,7 +8,7 @@ python implementation of molecular dynamics fingerprints as delineated in https:
 from __future__ import absolute_import
 
 # Add imports here
-from .mdfptools import *
+# from .mdfptools import *
 
 from . import Composer, Parameteriser, Extractor, Simulator, utils
 

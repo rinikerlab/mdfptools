@@ -20,31 +20,56 @@ import numpy as np
 # from mdfptools.utils import get_data_filename
 # from .utils import get_data_filename
 # from utils import get_data_filename
-from mdfptools.utils import get_data_filename
+from .utils import get_data_filename
 """
 TODOs:
     - proper handling of tip3p water loading
-
+    - SMILES string is stored in the `title` field of parmed object
 """
 ##############################################################
 
 class BaseParameteriser():
+    """
+
+    .. warning :: The base class should not be used directly
+    """
     system_pmd = None
 
     @classmethod
     def via_openeye(cls):
+        """
+        Abstract method
+        """
         raise NotImplementedError
 
     @classmethod
     def via_rdkit(cls):
+        """
+        Abstract method
+        """
         raise NotImplementedError
 
     @classmethod
     def pmd_generator(cls):
+        """
+        Abstract method
+        """
         raise NotImplementedError
 
     @classmethod
     def _rdkit_setter(cls, smiles):
+        """
+        Prepares an rdkit molecule with 3D coordinates.
+
+        Parameters
+        ------------
+        smiles : str
+            SMILES string of the solute moleulce
+
+        Returns
+        ---------
+        mol : rdkit.Chem.Mol
+        """
         from rdkit import Chem
         from rdkit.Chem import AllChem
 
@@ -67,6 +92,7 @@ class BaseParameteriser():
         # mol = AllChem.AssignBondOrdersFromTemplate(ref, mol)
         return mol
 
+    """
     @classmethod
     def _rdkit_charger(cls, mol):
         if not hasattr(cls, "charge_engine"):
@@ -74,6 +100,7 @@ class BaseParameteriser():
         # cls.mol = cls.charge_engine(mol)
         # return cls.mol
         return cls.charge_engine(mol)
+    """
 
     @classmethod
     def _rdkit_parameteriser(cls, mol):
@@ -81,18 +108,11 @@ class BaseParameteriser():
         from openforcefield.utils.toolkits import RDKitToolkitWrapper, ToolkitRegistry
 
         """
-        Generate a System from the given OEMol and SMIRNOFF forcefield, return the resulting System.
+        Creates a parameterised system from rdkit molecule
+
         Parameters
         ----------
-        forcefield : ForceField
-            SMIRNOFF forcefield
-        mol : RDKit molecule
-            Molecule to test (must have coordinates)
-        Returns
-        ----------
-        topology : OpenMM Topology
-        system : OpenMM System
-        positions : initial atomic positions (OpenMM)
+        mol : rdkit.Chem.Mol
         """
 
         try:
@@ -126,6 +146,17 @@ class BaseParameteriser():
 
     @classmethod
     def load_ddec_models(cls, epsilon = 4):
+        """
+        Charging molecule using machine learned charge instead of the default AM1-BCC method.
+
+        Requires first installing the mlddec(https://github.com/rinikerlab/mlddec) package. Parameters are availible for elements : {H,C,N,O,Cl,Br,F}.
+
+        Parameters
+        ------------
+        epsilon : int
+            Dielectric constant to be used, polarity of the resulting molecule varies, possible values are {4,78}.
+        """
+
         try:
             import mlddec
         except ImportError:
@@ -146,10 +177,25 @@ class BaseParameteriser():
 
     @classmethod
     def unload_ddec_models(cls):
+        """
+        Unload the machine-learned charge model, which takes over 1 GB of memory.
+        """
         del cls.rf
 
     @classmethod
     def _openeye_setter(cls, smiles):
+        """
+        Prepares an openeye molecule with 3D coordinates.
+
+        Parameters
+        ------------
+        smiles : str
+            SMILES string of the solute moleulce
+
+        Returns
+        ---------
+        mol : oechem.OEMol
+        """
         from openeye import oechem # OpenEye Python toolkits
         from openeye import oeomega # Omega toolkit
         # from openeye import oequacpac #Charge toolkit
@@ -187,6 +233,13 @@ class BaseParameteriser():
 
     @classmethod
     def _openeye_parameteriser(cls, mol):
+        """
+        Creates a parameterised system from openeye molecule
+
+        Parameters
+        ----------
+        mol : oechem.OEMol
+        """
         try:
             forcefield = ForceField('test_forcefields/smirnoff99Frosst.offxml')
             molecule = Molecule.from_openeye(mol)
@@ -215,34 +268,95 @@ class BaseParameteriser():
         cls.ligand_pmd = ligand_pmd
 
     @classmethod
-    def save(cls, filename, filepath = "./"):
-        pickle_out = open(filepath + "{}.pickle".format(filename), "wb")
+    def save(cls, file_name, file_path = "./"):
+        """
+        Save to file the parameterised system.
+
+        Parameters
+        ------------
+        file_name : str
+            No file type postfix is necessary
+        file_path : str
+            Default to current directory
+        """
+        pickle_out = open(file_path + "{}.pickle".format(file_name), "wb")
         pickle.dump(cls.system_pmd , pickle_out)
         pickle_out.close()
 
     run = via_openeye
 
 class LiquidParameteriser(BaseParameteriser):
+    """
+    Parameterisation of liquid box, i.e. multiple replicates of the same molecule
+    """
 
     @classmethod
     def via_openeye(cls, smiles, density, num_lig = 100):
         """
+        Parameterisation perfromed via openeye toolkit.
+
+        Parameters
+        ----------------
+        smiles : str
+            SMILES string of the molecule to be parametersied
         density : simtk.unit
+            Density of liquid box
+        num_lig : int
+            Number of replicates of the molecule
+
+        Returns
+        ------------------
+        system_pmd : parmed.structure
+            The parameterised system as parmed object
         """
         mol = cls._openeye_setter(smiles)
         # mol = cls._openeye_charger(mol)
         cls._openeye_parameteriser(mol)
-        cls._via_helper(density, num_lig)
+        return cls._via_helper(density, num_lig)
 
     @classmethod
-    def via_rdkit(cls, smiles):
+    def via_rdkit(cls, smiles, density, num_lig = 100):
+        #TODO !!!!!!!!!!!! approximating volue by density if not possible via rdkit at the moment.
+        """
+        Parameterisation perfromed via rdkit.
+
+        Parameters
+        ----------------
+        smiles : str
+            SMILES string of the molecule to be parametersied
+        density : simtk.unit
+            Density of liquid box
+        num_lig : int
+            Number of replicates of the molecule
+
+        Returns
+        ------------------
+        system_pmd : parmed.structure
+            The parameterised system as parmed object
+        """
         mol = cls._rdkit_setter(smiles)
         # mol = cls._openeye_charger(mol)
         cls._rdkit_parameteriser(mol)
-        cls._via_helper(density, num_lig)
+        return cls._via_helper(density, num_lig)
 
     @classmethod
     def _via_helper(cls, density, num_lig):
+        #TODO !!!!!!!!!!!! approximating volue by density if not possible via rdkit at the moment.
+        """
+        Helper function for via_rdkit or via_openeye
+
+        Parameters
+        ----------------
+        density : simtk.unit
+            Density of liquid box
+        num_lig : int
+            Number of replicates of the molecule
+
+        Returns
+        ------------------
+        system_pmd : parmed.structure
+            The parameterised system as parmed object
+        """
         import mdtraj as md
         from openmoltools import packmol
         density = density.value_in_unit(unit.gram / unit.milliliter)
@@ -268,6 +382,14 @@ class LiquidParameteriser(BaseParameteriser):
     run = via_openeye
 
 class SolutionParameteriser(BaseParameteriser):
+    """
+    Parameterisation of solution box, i.e. one copy of solute molecule surronded by water.
+
+    Parameters
+    --------------
+    solvent_pmd : parmed.structure
+        Parameterised tip3p water as parmed object
+    """
     # forcefield = ForceField('tip3p.offxml')
     # molecule = Molecule.from_file(get_data_filename("water.sdf"))
     # print(molecule.partial_charges)
@@ -277,28 +399,66 @@ class SolutionParameteriser(BaseParameteriser):
 
     solvent_pmd = parmed.load_file(get_data_filename("tip3p.prmtop")) #FIXME #TODO
 
-
-    default_padding = 1.25 #nm
-
+    # default_padding = 1.25 #nm
 
     @classmethod
-    def via_openeye(cls, smiles, **kwargs):
+    def via_openeye(cls, smiles, default_padding = 1.25*unit.nanometer, **kwargs):
+        """
+        Parameterisation perfromed via openeye.
+
+        Parameters
+        --------------------
+        smiles : str
+            SMILES string of the solute molecule
+        default_padding : simtk.unit
+            Dictates amount of water surronding the solute. Default is 1.25 nanometers
+
+        Returns
+        ------------------
+        system_pmd : parmed.structure
+            The parameterised system as parmed object
+        """
         #TODO currently only supports one solute molecule
         mol = cls._openeye_setter(smiles)
         # mol = cls._openeye_charger(mol)
         cls._openeye_parameteriser(mol)
+        cls.default_padding = default_padding.value_in_unit(unit.nanometer)
 
         return cls._via_helper(**kwargs)
 
     @classmethod
-    def via_rdkit(cls, smiles, **kwargs):
+    def via_rdkit(cls, smiles, default_padding = 1.25*unit.nanometer, **kwargs):
+        """
+        Parameterisation perfromed via openeye.
+
+        Parameters
+        --------------------
+        smiles : str
+            SMILES string of the solute molecule
+        default_padding : simtk.unit
+            Dictates amount of water surronding the solute. Default is 1.25 nanometers
+
+        Returns
+        ------------------
+        system_pmd : parmed.structure
+            The parameterised system as parmed object
+        """
         mol = cls._rdkit_setter(smiles)
         # mol = cls._rdkit_charger(mol)
         cls._rdkit_parameteriser(mol)
+        cls.default_padding = default_padding.value_in_unit(unit.nanometer)
         return cls._via_helper(**kwargs)
 
     @classmethod
     def _via_helper(cls, **kwargs):
+        """
+        Helper function for via_rdkit or via_openeye
+
+        Returns
+        ------------------
+        system_pmd : parmed.structure
+            The parameterised system as parmed object
+        """
         from pdbfixer import PDBFixer # for solvating
 
         fixer = PDBFixer(cls.pdb_filename)
@@ -337,6 +497,19 @@ class SolutionParameteriser(BaseParameteriser):
 class VaccumParameteriser(BaseParameteriser):
     @classmethod
     def via_openeye(cls, smiles):
+        """
+        Parameterisation perfromed via openeye toolkit.
+
+        Parameters
+        ----------------
+        smiles : str
+            SMILES string of the molecule to be parametersied
+
+        Returns
+        ------------------
+        system_pmd : parmed.structure
+            The parameterised system as parmed object
+        """
         mol = cls._openeye_setter(smiles)
         # mol = cls._openeye_charger(mol)
         cls._openeye_parameteriser(mol)
@@ -349,6 +522,19 @@ class VaccumParameteriser(BaseParameteriser):
 
     @classmethod
     def via_rdkit(cls, smiles):
+        """
+        Parameterisation perfromed via rdkit toolkit.
+
+        Parameters
+        ----------------
+        smiles : str
+            SMILES string of the molecule to be parametersied
+
+        Returns
+        ------------------
+        system_pmd : parmed.structure
+            The parameterised system as parmed object
+        """
         mol = cls._rdkit_setter(smiles)
         # mol = cls._rdkit_charger(mol)
         cls._rdkit_parameteriser(mol)

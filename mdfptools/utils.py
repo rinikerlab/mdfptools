@@ -1,10 +1,47 @@
-import hashlib, sys
+import sys
 from rdkit import Chem
 from rdkit.Chem import SaltRemover, AllChem, Draw
 
+def get_data_filename(relative_path): #TODO put in utils
+    """Get the full path to one of the reference files in testsystems.
+    In the source distribution, these files are in ``mdfptools/data/``,
+    but on installation, they're moved to somewhere in the user's python site-packages directory.
 
+    Parameters
+    ----------
+    name : str
+        Name of the file to load (with respect to the repex folder).
+
+    Returns
+    ---------
+    fn : str
+        filename
+    """
+
+    import os
+    from pkg_resources import resource_filename
+    fn = resource_filename('mdfptools', os.path.join('data', relative_path))
+
+    if not os.path.exists(fn):
+        raise ValueError("Sorry! %s does not exist. If you just added it, you'll have to re-install" % fn)
+
+    return fn
 
 def canonical_smiles_from_smiles(smiles, sanitize = True):
+    """
+    Apply canonicalisation with rdkit
+
+    Parameters
+    ------------
+    smiles : str
+    sanitize : bool
+        Wether to apply rdkit sanitisation, default yes.
+
+    Returns
+    ---------
+    canonical_smiles : str
+        Returns None if canonicalisation fails
+    """
     try:
         mol = Chem.MolFromSmiles(smiles, sanitize = sanitize)
         mol.UpdatePropertyCache()
@@ -15,11 +52,36 @@ def canonical_smiles_from_smiles(smiles, sanitize = True):
         return None
 
 def hashing(smiles):
+    """
+    Converts a string to hexdecimal representation (length 32). Specifically, it is used in mdfptools to convert canonical smiles to hex so it can be used as filename when store to disk.
+
+    Parameters
+    -----------
+    smiles : str
+
+    Returns
+    ------------
+    hex_str : str
+        Hexdecimal representation
+    """
+    import hashlib
     hash_object = hashlib.md5(canonical_smiles_from_smiles(smiles).encode("utf-8"))
     return hash_object.hexdigest()
 
-    
+
 def screen_organic(smiles):
+    """
+    Heuristic to determine if a input SMILES string is considered as only organic matter.
+
+
+    Parameters
+    -----------
+    smiles : str
+
+    Returns
+    ------------
+    is_organic : bool
+    """
     if smiles is None: return False
     remover = SaltRemover.SaltRemover()
 

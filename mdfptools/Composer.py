@@ -8,12 +8,23 @@ import functools
 
 class MDFP():
     """
+    A MDFP object contains a set of features for a molecule, obtaining from a simulation or a set of simulations.
+
+
     .. todo::
         - method to give back the keys
         - store some metdadata?
     """
-    def __init__(self, dict):
-        self.fp = dict
+    def __init__(self, mdfp_dict):
+        """
+        Parameters
+        ----------
+        fp_dict : dict
+            Keys are each of the type features a given `Extractor` obtains, e.g. "2d_count" are the 2D topological features obtained from molecule SMILES, "intra_lj" are the intra-molecular LJ energies obtained from simulation.
+
+            Values are the corresponding set of numerics, stored as lists.
+        """
+        self.mdfp = mdfp_dict
 
     def get_mdfp(self):
         """
@@ -21,7 +32,10 @@ class MDFP():
         ----------
         a list of floating values, i.e. the mdfp feature vector
         """
-        return functools.reduce(lambda a, b : a + b, self.fp.values())
+        return functools.reduce(lambda a, b : a + b, self.mdfp.values())
+
+    def __str__(self):
+        return str(self.mdfp)
 
 class BaseComposer():
     """
@@ -46,22 +60,15 @@ class BaseComposer():
     @classmethod
     def _get_relevant_properties(cls):
         """
-        Parameters
-        ----------
-
-        smiles : str
-            SMILES string of the solute molecule
+        Where the set of features to be included in the final MDFP are defined
         """
         cls.fp  = {**cls.fp, **cls._get_2d_descriptors()}
 
     @classmethod
     def _get_2d_descriptors(cls):
         """
-        Parameters
-        ----------
+        Obtain those 2D topological features as described in the original publication.
 
-        smiles : str
-            SMILES string of the solute molecule
         """
         m = Chem.MolFromSmiles(cls.smiles, sanitize = True)
         if m is None:
@@ -86,11 +93,14 @@ class BaseComposer():
     @classmethod
     def _get_statistical_moments(cls, property_extractor, statistical_moments = [mean, std, median], **kwargs):
         """
+        Performs statistical weighting of the numerical properties (e.g. LJ and electrostatics energies) obtained from each frame of simulation.
+
         Parameters
         ----------
-
-        smiles : str
-            SMILES string of the solute molecule
+        property_extractor : mdfptools.Extractor
+            The particular type of Extractor methodclass used to obtain the various properties from simulation.
+        statistical_moments : list
+            The list of statistical weighting to be performed to each properties from all the frames. Default list of weighting are the mean, standard deviation and median.
         """
         cls.statistical_moments = [i.__name__ for i in statistical_moments]
         fp = {}
@@ -120,10 +130,20 @@ class TrialSolutionComposer(BaseComposer):
 # class MDFPComposer(BaseComposer):
 class SolutionComposer(BaseComposer):
     """
-    Generates fingerprint most akin to that from the original publication
+    Composer used to extract features from solution simulations, namely one copy of solute in water solvent. This generates fingerprint most akin to that from the original publication.
     """
     @classmethod
     def run(cls, mdtraj_obj, parmed_obj, smiles = None, **kwargs):
+        """
+        Parameters
+        -----------
+        mdtraj_obj : mdtraj.trajectory
+            The simulated trajectory
+        parmed_obj : parmed.structure
+            Parmed object of the fully parameterised simulated system.
+        smiles : str
+            SMILES string of the solute. If mdfptools.Parameteriser was used during parameterisation, then smiles is automatically obtained from the parmed_obj.
+        """
         cls.kwargs = {"mdtraj_obj" : mdtraj_obj ,
                         "parmed_obj" : parmed_obj}
         cls.kwargs = {**cls.kwargs , **kwargs}
@@ -132,11 +152,13 @@ class SolutionComposer(BaseComposer):
                 smiles = parmed_obj.title
             else:
                 raise ValueError("Input ParMed Object does not contain SMILES string, add SMILES as an additional variable")
-        else:
-            return super().run(smiles)
+        return super().run(smiles)
 
     @classmethod
     def _get_relevant_properties(cls):
+        """
+        Where the set of features to be included in the final MDFP are defined
+        """
         cls.fp  = {**cls.fp, **cls._get_2d_descriptors()}
         cls.fp  = {**cls.fp, **cls._get_statistical_moments(WaterExtractor.extract_energies, **cls.kwargs)}
         cls.fp  = {**cls.fp, **cls._get_statistical_moments(WaterExtractor.extract_rgyr, **cls.kwargs)}
@@ -144,9 +166,22 @@ class SolutionComposer(BaseComposer):
         del cls.kwargs
 
 class LiquidComposer(BaseComposer):
+    """
+    Composer used to extract features from liquid simulations, namely a box containing replicates of the same molecule.
+    """
     # def __init__(cls, smiles, mdtraj_obj, parmed_obj):
     @classmethod
     def run(cls, mdtraj_obj, parmed_obj, smiles = None, **kwargs):
+        """
+        Parameters
+        -----------
+        mdtraj_obj : mdtraj.trajectory
+            The simulated trajectory
+        parmed_obj : parmed.structure
+            Parmed object of the fully parameterised simulated system.
+        smiles : str
+            SMILES string of one copy of the solute. If mdfptools.Parameteriser was used during parameterisation, then smiles is automatically obtained from the parmed_obj.
+        """
         cls.kwargs = {"mdtraj_obj" : mdtraj_obj ,
                         "parmed_obj" : parmed_obj}
         cls.kwargs = {**cls.kwargs , **kwargs}
@@ -155,11 +190,13 @@ class LiquidComposer(BaseComposer):
                 smiles = parmed_obj.title
             else:
                 raise ValueError("Input ParMed Object does not contain SMILES string, add SMILES as an additional variable")
-        else:
-            return super().run(smiles)
+        return super().run(smiles)
 
     @classmethod
     def _get_relevant_properties(cls):
+        """
+        Where the set of features to be included in the final MDFP are defined
+        """
         cls.fp  = {**cls.fp, **cls._get_2d_descriptors()}
         cls.fp  = {**cls.fp, **cls._get_statistical_moments(LiquidExtractor.extract_energies, **cls.kwargs)}
         cls.fp  = {**cls.fp, **cls._get_statistical_moments(LiquidExtractor.extract_rgyr, **cls.kwargs)}
@@ -169,8 +206,25 @@ class LiquidComposer(BaseComposer):
         del cls.kwargs
 
 class SolutionLiquidComposer(BaseComposer):
+    """
+    Composer used to extract features from pairs of solution and liquid simulations.
+    """
     @classmethod
     def __init__(cls, solv_mdtraj_obj, solv_parmed_obj, liq_mdtraj_obj, liq_parmed_obj, smiles = None, **kwargs):
+        """
+        Parameters
+        -----------
+        solv_mdtraj_obj : mdtraj.trajectory
+            The simulated solution trajectory
+        solv_parmed_obj : parmed.structure
+            Parmed object of the fully parameterised simulated solution system.
+        liq_mdtraj_obj : mdtraj.trajectory
+            The simulated liquid trajectory
+        liq_parmed_obj : parmed.structure
+            Parmed object of the fully parameterised simulated liquid system.
+        smiles : str
+            SMILES string of one copy of the solute. If mdfptools.Parameteriser was used during parameterisation, then smiles is automatically obtained from the parmed_obj.
+        """
         cls.kwargs_solv = {"mdtraj_obj" : solv_mdtraj_obj ,
                         "parmed_obj" : solv_parmed_obj}
         cls.kwargs_liq = {"mdtraj_obj" : liq_mdtraj_obj ,
@@ -183,11 +237,13 @@ class SolutionLiquidComposer(BaseComposer):
                 smiles = parmed_obj.title
             else:
                 raise ValueError("Input ParMed Object does not contain SMILES string, add SMILES as an additional variable")
-        else:
-            return super().run(smiles)
+        return super().run(smiles)
 
     @classmethod
     def _get_relevant_properties(cls):
+        """
+        Where the set of features to be included in the final MDFP are defined
+        """
         cls.fp  = {**cls.fp, **cls._get_2d_descriptors()}
 
         cls.fp  = {**cls.fp, **cls._get_statistical_moments(WaterExtractor.extract_energies, **cls.kwargs_solv)}

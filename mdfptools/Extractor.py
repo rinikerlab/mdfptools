@@ -10,18 +10,44 @@ import mdtraj as md
 import numpy as np
 
 class BaseExtractor():
+    """
+
+    .. warning :: The base class should not be used directly
+    """
     string_identifier = "!Should_Call_From_Inherited_Class"
 
     @classmethod
-    def solute_solvent_split(cls, topology):
+    def _solute_solvent_split(cls, topology):
+        """
+        Abstract method
+        """
         raise NotImplementedError
 
     @classmethod
-    def get_all_exception_atom_pairs(cls, system, topology):
+    def _get_all_exception_atom_pairs(cls, system, topology):
+        """
+        Abstract method
+        """
         raise NotImplementedError
 
     @classmethod
     def _extract_energies_helper(cls, mdtraj_obj, parmed_obj, platform = "CPU", **kwargs):
+            """
+            Helper function for extracting the various energetic components described in the original publication from each frame of simulation. OpenMM.CustomNonbondedForces are used. Specifically, the reaction field defintion is taken from GROMOS96 manual.
+
+            Parameters
+            -------------
+            mdtraj_obj : mdtraj.trajectory
+                The simulated trajectory
+            parmed_obj : parmed.structure
+                Parmed object of the fully parameterised simulated system.
+            platform : str
+                The computing architecture to do the calculation, default to CPU, CUDA, OpenCL is also possible.
+            Returns
+            --------------
+            context : Openmm.Context
+            integrator : Openmm.Integrator
+            """
             parm, traj = parmed_obj, mdtraj_obj
 
             system = parm.createSystem(nonbondedMethod=CutoffPeriodic, nonbondedCutoff=1.0*nanometer, constraints=AllBonds)
@@ -29,8 +55,8 @@ class BaseExtractor():
                 i.setForceGroup(0)
 
             topology = parm.topology
-            solute_atoms, solvent_atoms = cls.solute_solvent_split(topology)
-            solute_1_4_pairs, solvent_1_4_pairs, solute_excluded_pairs, solvent_excluded_pairs, solute_self_pairs, solvent_self_pairs = cls.get_all_exception_atom_pairs(system, topology)
+            solute_atoms, solvent_atoms = cls._solute_solvent_split(topology)
+            solute_1_4_pairs, solvent_1_4_pairs, solute_excluded_pairs, solvent_excluded_pairs, solute_self_pairs, solvent_self_pairs = cls._get_all_exception_atom_pairs(system, topology)
 
 
 
@@ -398,6 +424,25 @@ class BaseExtractor():
 
     @classmethod
     def extract_energies(cls, mdtraj_obj, parmed_obj, platform = "CPU", **kwargs):
+            """
+            Extracting the various energetic components described in the original publication from each frame of simulation.
+
+            Parameters
+            -------------
+            mdtraj_obj : mdtraj.trajectory
+                The simulated trajectory
+            parmed_obj : parmed.structure
+                Parmed object of the fully parameterised simulated system.
+            platform : str
+                The computing architecture to do the calculation, default to CPU, CUDA, OpenCL is also possible.
+
+            Returns
+            ------------
+            df : dict
+                Keys are each of the energetic type features. e.g. "intra_lj" are the intra-molecular LJ energies obtained from simulation.
+
+                Values are the corresponding set of numerics, stored as lists.
+            """
             df = {}
 
 
@@ -409,7 +454,7 @@ class BaseExtractor():
             df["{}_total_crf".format(cls.string_identifier)] = []
             df["{}_total_lj".format(cls.string_identifier)] = []
             for i in range(len(mdtraj_obj)):
-                context.setPositions(matraj_obj.openmm_positions(i))
+                context.setPositions(mdtraj_obj.openmm_positions(i))
 
                 df["{}_intra_crf".format(cls.string_identifier)].append(context.getState(getEnergy=True, groups=set(cls.group_name2num["intra_crf"])).getPotentialEnergy()._value)
                 df["{}_intra_lj".format(cls.string_identifier)].append(context.getState(getEnergy=True, groups=set(cls.group_name2num["intra_lj"])).getPotentialEnergy()._value)
@@ -426,6 +471,20 @@ class BaseExtractor():
 
     @classmethod
     def extract_rgyr(cls, mdtraj_obj, **kwargs):
+        """
+        Extracting radius of gyration from each frame of simulation.
+        Assumes the first residue in the system is the solute.
+
+        Parameters
+        -------------
+        mdtraj_obj : mdtraj.trajectory
+            The simulated trajectory
+
+        Returns
+        ------------
+        df : dict
+            Key is prefix_rgyr, where prefix changes depending on the type of Extractor class used. Values are the corresponding set of numerics, stored as lists.
+        """
         df = {}
         df["{}_rgyr".format(cls.string_identifier)] = list(md.compute_rg(mdtraj_obj, masses = np.array([a.element.mass for a in mdtraj_obj.topology.atoms])))
         return df
@@ -433,7 +492,18 @@ class BaseExtractor():
     @classmethod
     def extract_sasa(cls, mdtraj_obj, **kwargs):
         """
-            assumes the first res in system is the solute
+        Extracting solvent accessible surface area from each frame of simulation.
+        Assumes the first residue in the system is the solute.
+
+        Parameters
+        -------------
+        mdtraj_obj : mdtraj.trajectory
+            The simulated trajectory
+
+        Returns
+        ------------
+        df : dict
+            Key is prefix_sasa, where prefix changes depending on the type of Extractor class used. Values are the corresponding set of numerics, stored as lists.
         """
         df = {}
         #df["{}_sasa".format(cls.string_identifier)] = list(md.compute_rg(mdtraj_obj.atom_slice(mdtraj_obj.topology.select("resid 0")))) # this was what I had before which should be incorrect
@@ -445,17 +515,37 @@ class BaseExtractor():
 ###############################################
 
 class SolutionExtractor(BaseExtractor):
-    """Condensed phase simulation where the system is composed of one solute molecule surronded by solvents
+    """
+    Extraction from condensed phase simulation where the system is composed of one solute molecule surronded by solvents
+
+    Parameters
+    -----------
+    string_identifier : str
+        The string identifier tagged as prefix to all values extracted in this class.
     """
 
     string_identifier = "solution"
 
     @classmethod
-    def solute_solvent_split(cls, topology):
+    def _solute_solvent_split(cls, topology):
         """
-        Assumes:
-            - only two type of residues, the less in number
+        Distinguish solutes from solvents, used in :func:`~BaseExtractor._extract_energies_helper`
 
+        The following is assumed:
+            - there are only two type of residues
+            - the residue that is lesser in number is the solute
+
+
+        Parameters
+        -----------
+        topology : parmed.topology
+
+        Returns
+        ------------
+        solute_atoms : set
+            set of solute_atoms indices
+        solvent_atoms : set
+            set of solvent_atoms indices
         """
         reslist = [res.name for res in topology.residues()]
         resname = set(reslist)
@@ -484,9 +574,24 @@ class SolutionExtractor(BaseExtractor):
 
 
     @classmethod
-    def get_all_exception_atom_pairs(cls, system, topology):
+    def _get_all_exception_atom_pairs(cls, system, topology):
         """
-        *Only gets it from a force field
+        Using the parametersied system to obtain the exception and exclusion pairs, used in :func:`~BaseExtractor._extract_energies_helper`. This is inferred purely from the parameterised system and connectivity.
+
+
+        Parameters
+        -----------
+        system : OpenMM.System
+        topology : parmed.topology
+
+        Returns
+        ------------
+        solute_1_4_pairs : set
+        solvent_1_4_pairs : set
+        solute_excluded_pairs : set
+        solvent_excluded_pairs : set
+        solute_self_pairs : set
+        solvent_self_pairs : set
         """
 
         forces = { force.__class__.__name__ : force for force in system.getForces() }
@@ -494,7 +599,7 @@ class SolutionExtractor(BaseExtractor):
         angleForce = forces['HarmonicAngleForce']
     #     bondForce = forces['HarmonicBondForce']
 
-        solute_idx, solvent_idx = cls.solute_solvent_split(topology)
+        solute_idx, solvent_idx = cls._solute_solvent_split(topology)
 
         #python3, for python2 use  set((b[0].index, b[1].index) if b[0].index < b[1].index else (b[1].index, b[0].index) for b in topology.bonds())
         bonded_pairs =  {(b[0].index, b[1].index) if b[0].index < b[1].index else (b[1].index, b[0].index) for b in topology.bonds()}
@@ -549,7 +654,23 @@ class SolutionExtractor(BaseExtractor):
 
     @classmethod
     def extract_dipole(cls, mdtraj_obj, parmed_obj, **kwargs):
-        solute_atoms, _ = cls.solute_solvent_split()
+        """
+        Extracting dipole moment from each frame of simulation.
+        Assumes the first residue in the system is the solute.
+
+        Parameters
+        -------------
+        mdtraj_obj : mdtraj.trajectory
+            The simulated trajectory
+        parmed_obj : parmed.structure
+            Parmed object of the fully parameterised simulated system.
+
+        Returns
+        ------------
+        df : dict
+            Key is prefix_dipole_postfix, where prefix changes depending on the type of Extractor class used, postfix can be {x,y,z,magnitude}. Values are the corresponding set of numerics, stored as lists.
+        """
+        solute_atoms, _ = cls._solute_solvent_split()
         solute_atoms = list(solute_atoms)
 
         df = {}
@@ -596,13 +717,27 @@ class TrialSolutionExtractor(SolutionExtractor):
 
 
 class WaterExtractor(SolutionExtractor):
+    """
+    Synonyms class as SolutionExtractor
+
+    Parameters
+    -----------
+    string_identifier : str
+        The string identifier tagged as prefix to all values extracted in this class.
+    """
     string_identifier = "water"
 
 ###############################################
 ###############################################
 
 class LiquidExtractor(BaseExtractor):
-    """Condensed phase simulation where the system is composed of one kind of molecule only
+    """Extraction from condensed phase simulation where the system is composed of one kind of molecule only.
+
+    Parameters
+    -----------
+    string_identifier : str
+        The string identifier tagged as prefix to all values extracted in this class.
+
     """
     string_identifier = "liquid"
 
@@ -613,6 +748,22 @@ class LiquidExtractor(BaseExtractor):
 
     @classmethod
     def extract_dipole_magnitude(cls, mdtraj_obj, parmed_obj, **kwargs):
+        """
+        Extracting dipole moment magnitude from each frame of simulation.
+        Assumes the first residue in the system is the solute.
+
+        Parameters
+        -------------
+        mdtraj_obj : mdtraj.trajectory
+            The simulated trajectory
+        parmed_obj : parmed.structure
+            Parmed object of the fully parameterised simulated system.
+
+        Returns
+        ------------
+        df : dict
+            Key is prefix_dipole_magnitude, where prefix changes depending on the type of Extractor class used. Values are the corresponding set of numerics, stored as lists.
+        """
         df = {}
         #TODO
         charges = [i.charge for i in parmed_obj.atoms]
@@ -620,11 +771,24 @@ class LiquidExtractor(BaseExtractor):
         return df
 
     @classmethod
-    def solute_solvent_split(cls, topology):
+    def _solute_solvent_split(cls, topology):
         """
-        Assumes:
+        Distinguish solutes from solvents, used in :func:`~BaseExtractor._extract_energies_helper`
+
+        The following is assumed:
             - the first residue is the 'solute' , else 'solvent'
 
+
+        Parameters
+        -----------
+        topology : parmed.topology
+
+        Returns
+        ------------
+        solute_atoms : set
+            set of solute_atoms indices
+        solvent_atoms : set
+            set of solvent_atoms indices
         """
         solute_atoms = set()
         solvent_atoms = set()
@@ -636,17 +800,33 @@ class LiquidExtractor(BaseExtractor):
         return solute_atoms, solvent_atoms
 
     @classmethod
-    def get_all_exception_atom_pairs(cls, system, topology):
+    def _get_all_exception_atom_pairs(cls, system, topology):
         """
-        *Only gets it from a force field
+        Using the parametersied system to obtain the exception and exclusion pairs, used in :func:`~BaseExtractor._extract_energies_helper`. This is inferred purely from the parameterised system and connectivity.
+
+
+        Parameters
+        -----------
+        system : OpenMM.System
+        topology : parmed.topology
+
+        Returns
+        ------------
+        solute_1_4_pairs : set
+        solvent_1_4_pairs : set
+        solute_excluded_pairs : set
+        solvent_excluded_pairs : set
+        solute_self_pairs : set
+        solvent_self_pairs : set
         """
+
 
         forces = { force.__class__.__name__ : force for force in system.getForces() }
 
         angleForce = forces['HarmonicAngleForce']
     #     bondForce = forces['HarmonicBondForce']
 
-        solute_idx, solvent_idx = cls.solute_solvent_split(topology)
+        solute_idx, solvent_idx = cls._solute_solvent_split(topology)
 
         #python3, for python2 use  set((b[0].index, b[1].index) if b[0].index < b[1].index else (b[1].index, b[0].index) for b in topology.bonds())
         bonded_pairs =  {(b[0].index, b[1].index) if b[0].index < b[1].index else (b[1].index, b[0].index) for b in topology.bonds()}
