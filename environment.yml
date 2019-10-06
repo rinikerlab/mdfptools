@@ -1,0 +1,21 @@
+name: mdfptools
+channels:
+    - conda-forge
+    - omnia
+    - rdkit
+    - defaults
+dependencies:
+    # readthedocs dependencies
+    - numpydoc
+    - nbsphinx
+    - nbsphinx_link
+    - recommonmark
+    # conda build dependencies
+    - python
+    - setuptools
+    - numpy
+    - openmm
+    - parmed
+    - rdkit
+    - openforcefield
+    - packaging
