@@ -8,7 +8,6 @@ dependencies:
     # readthedocs dependencies
     - numpydoc
     - nbsphinx
-    - nbsphinx_link
     - recommonmark
     # conda build dependencies
     - python
@@ -18,4 +17,7 @@ dependencies:
     - parmed
     - rdkit
     - openforcefield
+    - mdtraj
     - packaging
+    - pip:
+      - nbsphinx_link
