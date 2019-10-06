@@ -401,7 +401,6 @@ class SolutionParameteriser(BaseParameteriser):
         solvent_pmd = parmed.load_file(get_data_filename("tip3p.prmtop")) #FIXME #TODO
     except ValueError:
         print("Water file cannot be located")
-        return
 
     # default_padding = 1.25 #nm
 
