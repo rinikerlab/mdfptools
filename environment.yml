@@ -2,11 +2,12 @@ name: mdfptools
 channels:
     - omnia
     - rdkit
+    - conda-forge
 dependencies:
     # conda build dependencies
     - rdkit
-    - cairo >=1.16
-    - bson
+    #- cairo >=1.16
+    #- bson
     - openforcefield==0.5.0
     - mdtraj
     - pip:
