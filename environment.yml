@@ -5,7 +5,7 @@ channels:
 dependencies:
     # conda build dependencies
     - rdkit
-    - openforcefield
+    - openforcefield==0.5.0
     - mdtraj
     - pip:
       - nbsphinx_link
