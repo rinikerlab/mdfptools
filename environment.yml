@@ -1,10 +1,8 @@
 name: mdfptools
 channels:
     - omnia
+    - rdkit
 dependencies:
-    # readthedocs dependencies
-    - numpydoc
-    - nbsphinx
     # conda build dependencies
     - rdkit
     - openforcefield
@@ -12,3 +10,5 @@ dependencies:
     - pip:
       - nbsphinx_link
       - recommonmark
+      - nbsphinx
+      - numpydoc
