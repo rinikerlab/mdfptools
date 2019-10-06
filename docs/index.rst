@@ -1,15 +1,31 @@
-.. mdfptools documentation master file, created by
-   sphinx-quickstart on Thu Mar 15 13:55:56 2018.
+.. MDFPtools documentation master file, created by
+   sphinx-quickstart on Mon Sep 30 22:34:55 2019.
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to mdfptools's documentation!
-=========================================================
+Welcome to MDFPtools's documentation!
+=====================================
 
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
 
+   install
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Tutorial:
+
+   tutorial
+
+.. toctree::
+   :maxdepth: 2
+   :caption: API References:
+
+   parameterisers
+   simulators
+   extractors
+   composers
+   utils
 
 
 Indices and tables
