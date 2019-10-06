@@ -397,7 +397,11 @@ class SolutionParameteriser(BaseParameteriser):
     # openmm_system = forcefield.create_openmm_system(topology, charge_from_molecules= [molecule])
     # solvent_pmd = parmed.openmm.topsystem.load_topology(topology.to_openmm(), openmm_system, [[1,0,0],[0,1,0],[0,0,1]])
 
-    solvent_pmd = parmed.load_file(get_data_filename("tip3p.prmtop")) #FIXME #TODO
+    try:
+        solvent_pmd = parmed.load_file(get_data_filename("tip3p.prmtop")) #FIXME #TODO
+    except ValueError:
+        print("Water file cannot be located")
+        return
 
     # default_padding = 1.25 #nm
 
