@@ -14,7 +14,7 @@ import parmed
 # from rdkit import Chem
 import pickle
 import shutil
-# import os
+import os
 import numpy as np
 # import mdfptools
 # from mdfptools.utils import get_data_filename
@@ -278,10 +278,18 @@ class BaseParameteriser():
             No file type postfix is necessary
         file_path : str
             Default to current directory
+
+        Returns
+        --------
+        path : str
+            The absolute path where the trajectory is written to.
         """
-        pickle_out = open(file_path + "{}.pickle".format(file_name), "wb")
+        path = '{}/{}.pickle'.format(file_path, file_name)
+        pickle_out = open(path, "wb")
         pickle.dump(cls.system_pmd , pickle_out)
         pickle_out.close()
+
+        return os.path.abspath(path)
 
     run = via_openeye
 
