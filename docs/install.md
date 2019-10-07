@@ -7,9 +7,11 @@ The MDFPtools packages is built on various packages that is conda-installable. T
 Once conda is available, execute the following commands to install all essential dependencies:
 
 ```bash
-conda install -c rdkit rdkit
-conda install -c omnia openforcefield, openmm, mdtraj, parmed
+conda config --add channels omnia --add channels conda-forge
+conda update --all
 conda install numpy
+conda install -c rdkit rdkit
+conda install -c omnia openforcefield, mdtraj
 ```
 
 *If one wishes to use the commercial software OpenEye install of RDKit during the parameterisation of the systems, then the relevant OpenEye modules need to be installed, [follow detail here.](https://docs.eyesopen.com/toolkits/python/quickstart-python/install.html)*
@@ -18,7 +20,7 @@ After all dependencies are installed, navigate to a directory where you wish to 
 ```
 git clone https://github.com/rinikerlab/mdfptools.git
 cd mdfptools
-python setup.py install
+python setup.py build install
 ```
 
 To use the machine-learned partial charged developed in our lab during the parameterisation stage, install separately the [mlddec package](github.com/rinikierlab/mlddec).

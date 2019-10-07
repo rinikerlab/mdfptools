@@ -101,4 +101,6 @@ ENV/
 # mypy
 .mypy_cache/
 
+#both commands needed to just keep ipynb files
 examples/*
+!examples/*.ipynb
