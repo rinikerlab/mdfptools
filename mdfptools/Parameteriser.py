@@ -203,7 +203,17 @@ class BaseParameteriser():
         cls.smiles = smiles
         cls.omega = oeomega.OEOmega()
 
-        cls.omega.SetMaxConfs(1)
+        # modified in accordance to recommendation on omega example script: https://docs.eyesopen.com/toolkits/cookbook/python/modeling/am1-bcc.html
+        # reduced the default total number of confs from 800 to 100 to save execution time
+        eWindow = 15.0
+        cls.omega.SetEnergyWindow(eWindow)
+        if "openeye_maxconf" in kwargs and type(kwargs["openeye_maxconf"]) is int and kwargs["openeye_maxconf"] > 0 :
+            cls.omega.SetMaxConfs(kwargs["openeye_maxconf"])
+        else:
+            cls.omega.SetMaxConfs(100)
+        cls.omega.SetRMSThreshold(1.0)
+
+
         cls.omega.SetIncludeInput(False)
         cls.omega.SetStrictStereo(False) #Refuse to generate conformers if stereochemistry not provided
         # cls.charge_engine = oequacpac.OEAM1BCCCharges()
