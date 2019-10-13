@@ -57,7 +57,7 @@ class BaseParameteriser():
         raise NotImplementedError
 
     @classmethod
-    def _rdkit_setter(cls, smiles):
+    def _rdkit_setter(cls, smiles, **kwargs):
         """
         Prepares an rdkit molecule with 3D coordinates.
 
@@ -103,7 +103,7 @@ class BaseParameteriser():
     """
 
     @classmethod
-    def _rdkit_parameteriser(cls, mol):
+    def _rdkit_parameteriser(cls, mol, **kwargs):
         from rdkit import Chem
         from openforcefield.utils.toolkits import RDKitToolkitWrapper, ToolkitRegistry
 
@@ -145,7 +145,7 @@ class BaseParameteriser():
         cls.ligand_pmd = ligand_pmd
 
     @classmethod
-    def load_ddec_models(cls, epsilon = 4):
+    def load_ddec_models(cls, epsilon = 4, **kwargs):
         """
         Charging molecule using machine learned charge instead of the default AM1-BCC method.
 
@@ -176,14 +176,14 @@ class BaseParameteriser():
     #     return mlddec.get_charges(mol, cls.rf)
 
     @classmethod
-    def unload_ddec_models(cls):
+    def unload_ddec_models(cls, **kwargs):
         """
         Unload the machine-learned charge model, which takes over 1 GB of memory.
         """
         del cls.rf
 
     @classmethod
-    def _openeye_setter(cls, smiles):
+    def _openeye_setter(cls, smiles, **kwargs):
         """
         Prepares an openeye molecule with 3D coordinates.
 
@@ -202,6 +202,7 @@ class BaseParameteriser():
 
         cls.smiles = smiles
         cls.omega = oeomega.OEOmega()
+
         cls.omega.SetMaxConfs(1)
         cls.omega.SetIncludeInput(False)
         cls.omega.SetStrictStereo(False) #Refuse to generate conformers if stereochemistry not provided
@@ -232,7 +233,7 @@ class BaseParameteriser():
     #     return mol
 
     @classmethod
-    def _openeye_parameteriser(cls, mol):
+    def _openeye_parameteriser(cls, mol, **kwargs):
         """
         Creates a parameterised system from openeye molecule
 
@@ -268,7 +269,7 @@ class BaseParameteriser():
         cls.ligand_pmd = ligand_pmd
 
     @classmethod
-    def save(cls, file_name, file_path = "./"):
+    def save(cls, file_name, file_path = "./", **kwargs):
         """
         Save to file the parameterised system.
 
@@ -299,7 +300,7 @@ class LiquidParameteriser(BaseParameteriser):
     """
 
     @classmethod
-    def via_openeye(cls, smiles, density, num_lig = 100):
+    def via_openeye(cls, smiles, density, num_lig = 100, **kwargs):
         """
         Parameterisation perfromed via openeye toolkit.
 
@@ -317,13 +318,13 @@ class LiquidParameteriser(BaseParameteriser):
         system_pmd : parmed.structure
             The parameterised system as parmed object
         """
-        mol = cls._openeye_setter(smiles)
+        mol = cls._openeye_setter(smiles, **kwargs)
         # mol = cls._openeye_charger(mol)
-        cls._openeye_parameteriser(mol)
-        return cls._via_helper(density, num_lig)
+        cls._openeye_parameteriser(mol, **kwargs)
+        return cls._via_helper(density, num_lig, **kwargs)
 
     @classmethod
-    def via_rdkit(cls, smiles, density, num_lig = 100):
+    def via_rdkit(cls, smiles, density, num_lig = 100, **kwargs):
         #TODO !!!!!!!!!!!! approximating volue by density if not possible via rdkit at the moment.
         """
         Parameterisation perfromed via rdkit.
@@ -342,13 +343,13 @@ class LiquidParameteriser(BaseParameteriser):
         system_pmd : parmed.structure
             The parameterised system as parmed object
         """
-        mol = cls._rdkit_setter(smiles)
+        mol = cls._rdkit_setter(smiles, **kwargs)
         # mol = cls._openeye_charger(mol)
-        cls._rdkit_parameteriser(mol)
-        return cls._via_helper(density, num_lig)
+        cls._rdkit_parameteriser(mol, **kwargs)
+        return cls._via_helper(density, num_lig, **kwargs)
 
     @classmethod
-    def _via_helper(cls, density, num_lig):
+    def _via_helper(cls, density, num_lig, **kwargs):
         #TODO !!!!!!!!!!!! approximating volue by density if not possible via rdkit at the moment.
         """
         Helper function for via_rdkit or via_openeye
@@ -430,9 +431,9 @@ class SolutionParameteriser(BaseParameteriser):
             The parameterised system as parmed object
         """
         #TODO currently only supports one solute molecule
-        mol = cls._openeye_setter(smiles)
+        mol = cls._openeye_setter(smiles, **kwargs)
         # mol = cls._openeye_charger(mol)
-        cls._openeye_parameteriser(mol)
+        cls._openeye_parameteriser(mol, **kwargs)
         cls.default_padding = default_padding.value_in_unit(unit.nanometer)
 
         return cls._via_helper(**kwargs)
@@ -454,9 +455,9 @@ class SolutionParameteriser(BaseParameteriser):
         system_pmd : parmed.structure
             The parameterised system as parmed object
         """
-        mol = cls._rdkit_setter(smiles)
+        mol = cls._rdkit_setter(smiles, **kwargs)
         # mol = cls._rdkit_charger(mol)
-        cls._rdkit_parameteriser(mol)
+        cls._rdkit_parameteriser(mol, **kwargs)
         cls.default_padding = default_padding.value_in_unit(unit.nanometer)
         return cls._via_helper(**kwargs)
 
@@ -507,7 +508,7 @@ class SolutionParameteriser(BaseParameteriser):
 
 class VaccumParameteriser(BaseParameteriser):
     @classmethod
-    def via_openeye(cls, smiles):
+    def via_openeye(cls, smiles, **kwargs):
         """
         Parameterisation perfromed via openeye toolkit.
 
@@ -521,9 +522,9 @@ class VaccumParameteriser(BaseParameteriser):
         system_pmd : parmed.structure
             The parameterised system as parmed object
         """
-        mol = cls._openeye_setter(smiles)
+        mol = cls._openeye_setter(smiles, **kwargs)
         # mol = cls._openeye_charger(mol)
-        cls._openeye_parameteriser(mol)
+        cls._openeye_parameteriser(mol, **kwargs)
 
         cls.system_pmd = cls.ligand_pmd
 
@@ -532,7 +533,7 @@ class VaccumParameteriser(BaseParameteriser):
 
 
     @classmethod
-    def via_rdkit(cls, smiles):
+    def via_rdkit(cls, smiles, **kwargs):
         """
         Parameterisation perfromed via rdkit toolkit.
 
@@ -546,9 +547,9 @@ class VaccumParameteriser(BaseParameteriser):
         system_pmd : parmed.structure
             The parameterised system as parmed object
         """
-        mol = cls._rdkit_setter(smiles)
+        mol = cls._rdkit_setter(smiles, **kwargs)
         # mol = cls._rdkit_charger(mol)
-        cls._rdkit_parameteriser(mol)
+        cls._rdkit_parameteriser(mol, **kwargs)
 
         cls.system_pmd = cls.ligand_pmd
 
