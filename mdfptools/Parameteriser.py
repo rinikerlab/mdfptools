@@ -261,8 +261,8 @@ class BaseParameteriser():
             openmm_system = forcefield.create_openmm_system(topology, charge_from_molecules= [molecule])
 
             ligand_pmd = parmed.openmm.topsystem.load_topology(topology.to_openmm(), openmm_system, molecule._conformers[0])
-        except:
-            raise ValueError("Parameterisation Failed") #TODO
+        except Exception as e:
+            raise ValueError("Parameterisation Failed : {}".format(e)) #TODO
 
         ligand_pmd.title = cls.smiles
 
