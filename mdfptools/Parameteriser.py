@@ -117,7 +117,7 @@ class BaseParameteriser():
 
         try:
             forcefield = ForceField('test_forcefields/smirnoff99Frosst.offxml')
-            molecule = Molecule.from_rdkit(mol)
+            molecule = Molecule.from_rdkit(mol, allow_undefined_stereo = cls.allow_undefined_stereo)
             if hasattr(cls, "_ddec_charger"):
                 molecule.partial_charges = unit.Quantity(np.array(cls._ddec_charger(mol, cls.rf)), unit.elementary_charge)
             else:
@@ -253,7 +253,7 @@ class BaseParameteriser():
         """
         try:
             forcefield = ForceField('test_forcefields/smirnoff99Frosst.offxml')
-            molecule = Molecule.from_openeye(mol)
+            molecule = Molecule.from_openeye(mol, allow_undefined_stereo = cls.allow_undefined_stereo)
             from openforcefield.utils.toolkits import OpenEyeToolkitWrapper
             molecule.compute_partial_charges_am1bcc(toolkit_registry = OpenEyeToolkitWrapper())
 
@@ -310,7 +310,7 @@ class LiquidParameteriser(BaseParameteriser):
     """
 
     @classmethod
-    def via_openeye(cls, smiles, density, num_lig = 100, **kwargs):
+    def via_openeye(cls, smiles, density, allow_undefined_stereo = False, num_lig = 100, **kwargs):
         """
         Parameterisation perfromed via openeye toolkit.
 
@@ -320,6 +320,8 @@ class LiquidParameteriser(BaseParameteriser):
             SMILES string of the molecule to be parametersied
         density : simtk.unit
             Density of liquid box
+        allow_undefined_stereo : bool
+            Flag passed to OpenForceField `Molecule` object during parameterisation. When set to False an error is returned if SMILES have no/ambiguous steroechemistry. Default to False here as a sanity check for user.
         num_lig : int
             Number of replicates of the molecule
 
@@ -328,13 +330,14 @@ class LiquidParameteriser(BaseParameteriser):
         system_pmd : parmed.structure
             The parameterised system as parmed object
         """
+        cls.allow_undefined_stereo = allow_undefined_stereo
         mol = cls._openeye_setter(smiles, **kwargs)
         # mol = cls._openeye_charger(mol)
         cls._openeye_parameteriser(mol, **kwargs)
         return cls._via_helper(density, num_lig, **kwargs)
 
     @classmethod
-    def via_rdkit(cls, smiles, density, num_lig = 100, **kwargs):
+    def via_rdkit(cls, smiles, density, allow_undefined_stereo = False, num_lig = 100, **kwargs):
         #TODO !!!!!!!!!!!! approximating volue by density if not possible via rdkit at the moment.
         """
         Parameterisation perfromed via rdkit.
@@ -345,6 +348,8 @@ class LiquidParameteriser(BaseParameteriser):
             SMILES string of the molecule to be parametersied
         density : simtk.unit
             Density of liquid box
+        allow_undefined_stereo : bool
+            Flag passed to OpenForceField `Molecule` object during parameterisation. When set to False an error is returned if SMILES have no/ambiguous steroechemistry. Default to False here as a sanity check for user.
         num_lig : int
             Number of replicates of the molecule
 
@@ -353,6 +358,7 @@ class LiquidParameteriser(BaseParameteriser):
         system_pmd : parmed.structure
             The parameterised system as parmed object
         """
+        cls.allow_undefined_stereo = allow_undefined_stereo
         mol = cls._rdkit_setter(smiles, **kwargs)
         # mol = cls._openeye_charger(mol)
         cls._rdkit_parameteriser(mol, **kwargs)
@@ -424,7 +430,7 @@ class SolutionParameteriser(BaseParameteriser):
     # default_padding = 1.25 #nm
 
     @classmethod
-    def via_openeye(cls, smiles, default_padding = 1.25*unit.nanometer, **kwargs):
+    def via_openeye(cls, smiles, allow_undefined_stereo = False, default_padding = 1.25*unit.nanometer, **kwargs):
         """
         Parameterisation perfromed via openeye.
 
@@ -432,6 +438,8 @@ class SolutionParameteriser(BaseParameteriser):
         --------------------
         smiles : str
             SMILES string of the solute molecule
+        allow_undefined_stereo : bool
+            Flag passed to OpenForceField `Molecule` object during parameterisation. When set to False an error is returned if SMILES have no/ambiguous steroechemistry. Default to False here as a sanity check for user.
         default_padding : simtk.unit
             Dictates amount of water surronding the solute. Default is 1.25 nanometers
 
@@ -441,6 +449,7 @@ class SolutionParameteriser(BaseParameteriser):
             The parameterised system as parmed object
         """
         #TODO currently only supports one solute molecule
+        cls.allow_undefined_stereo = allow_undefined_stereo
         mol = cls._openeye_setter(smiles, **kwargs)
         # mol = cls._openeye_charger(mol)
         cls._openeye_parameteriser(mol, **kwargs)
@@ -449,7 +458,7 @@ class SolutionParameteriser(BaseParameteriser):
         return cls._via_helper(**kwargs)
 
     @classmethod
-    def via_rdkit(cls, smiles, default_padding = 1.25*unit.nanometer, **kwargs):
+    def via_rdkit(cls, smiles, allow_undefined_stereo = False, default_padding = 1.25*unit.nanometer, **kwargs):
         """
         Parameterisation perfromed via openeye.
 
@@ -457,6 +466,8 @@ class SolutionParameteriser(BaseParameteriser):
         --------------------
         smiles : str
             SMILES string of the solute molecule
+        allow_undefined_stereo : bool
+            Flag passed to OpenForceField `Molecule` object during parameterisation. When set to False an error is returned if SMILES have no/ambiguous steroechemistry. Default to False here as a sanity check for user.
         default_padding : simtk.unit
             Dictates amount of water surronding the solute. Default is 1.25 nanometers
 
@@ -465,6 +476,7 @@ class SolutionParameteriser(BaseParameteriser):
         system_pmd : parmed.structure
             The parameterised system as parmed object
         """
+        cls.allow_undefined_stereo = allow_undefined_stereo
         mol = cls._rdkit_setter(smiles, **kwargs)
         # mol = cls._rdkit_charger(mol)
         cls._rdkit_parameteriser(mol, **kwargs)
@@ -518,7 +530,7 @@ class SolutionParameteriser(BaseParameteriser):
 
 class VaccumParameteriser(BaseParameteriser):
     @classmethod
-    def via_openeye(cls, smiles, **kwargs):
+    def via_openeye(cls, smiles, allow_undefined_stereo = False, **kwargs):
         """
         Parameterisation perfromed via openeye toolkit.
 
@@ -526,12 +538,16 @@ class VaccumParameteriser(BaseParameteriser):
         ----------------
         smiles : str
             SMILES string of the molecule to be parametersied
+        allow_undefined_stereo : bool
+            Flag passed to OpenForceField `Molecule` object during parameterisation. When set to False an error is returned if SMILES have no/ambiguous steroechemistry. Default to False here as a sanity check for user.
+
 
         Returns
         ------------------
         system_pmd : parmed.structure
             The parameterised system as parmed object
         """
+        cls.allow_undefined_stereo = allow_undefined_stereo
         mol = cls._openeye_setter(smiles, **kwargs)
         # mol = cls._openeye_charger(mol)
         cls._openeye_parameteriser(mol, **kwargs)
@@ -543,7 +559,7 @@ class VaccumParameteriser(BaseParameteriser):
 
 
     @classmethod
-    def via_rdkit(cls, smiles, **kwargs):
+    def via_rdkit(cls, smiles, allow_undefined_stereo = False, **kwargs):
         """
         Parameterisation perfromed via rdkit toolkit.
 
@@ -551,12 +567,15 @@ class VaccumParameteriser(BaseParameteriser):
         ----------------
         smiles : str
             SMILES string of the molecule to be parametersied
+        allow_undefined_stereo : bool
+            Flag passed to OpenForceField `Molecule` object during parameterisation. When set to False an error is returned if SMILES have no/ambiguous steroechemistry. Default to False here as a sanity check for user.
 
         Returns
         ------------------
         system_pmd : parmed.structure
             The parameterised system as parmed object
         """
+        cls.allow_undefined_stereo = allow_undefined_stereo
         mol = cls._rdkit_setter(smiles, **kwargs)
         # mol = cls._rdkit_charger(mol)
         cls._rdkit_parameteriser(mol, **kwargs)
