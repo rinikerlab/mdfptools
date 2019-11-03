@@ -11,7 +11,7 @@ conda config --add channels omnia --add channels conda-forge
 conda update --all
 conda install numpy
 conda install -c rdkit rdkit
-conda install -c omnia openforcefield, mdtraj, pdbfixer
+conda install -c omnia openforcefield mdtraj pdbfixer
 ```
 
 *If one wishes to use the commercial software OpenEye install of RDKit during the parameterisation of the systems, then the relevant OpenEye modules need to be installed, [follow detail here.](https://docs.eyesopen.com/toolkits/python/quickstart-python/install.html)*
