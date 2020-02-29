@@ -32,7 +32,7 @@ class BaseSimulator():
     equil_steps = 50000  #100 ps
 
     @classmethod
-    def via_openmm(cls, parmed_obj, file_name, file_path = "./", platform = "CUDA", num_steps = 5000 * 500, write_out_freq = 5000, **kwargs):
+    def via_openmm(cls, parmed_obj, file_name, file_path = "./", platform = "CUDA", num_steps = 5000 * 500, write_out_freq = 5000, report_equilibration = False, report_production = False, **kwargs):
         """
         Runs simulation using OpenMM.
 
@@ -74,7 +74,13 @@ class BaseSimulator():
         simulation.minimizeEnergy()
 
         #Eq
-        # simulation.reporters.append(StateDataReporter("./" + hash_code + ".dat", 10000, step=True, volume = True, temperature = True))
+        try:
+            cls.equil_steps = kwargs["equil_steps"]
+        except KeyError:
+            pass
+        if report_equilibration:
+            print(cls.equil_steps, " steps")
+            simulation.reporters.append(StateDataReporter("{}/equilibration_{}.dat".format(file_path, file_name), cls.equil_steps//5000, step=True, volume = True, temperature = True))
         simulation.step(cls.equil_steps)
 
         state = simulation.context.getState(getPositions = True, getVelocities = True)
@@ -94,7 +100,8 @@ class BaseSimulator():
         simulation = Simulation(pmd.topology, system, integrator, platform)
         simulation.context.setPeriodicBoxVectors(*pmd.box_vectors)
         simulation.context.setPositions(pmd.positions)
-        # simulation.reporters.append(StateDataReporter("./" + hash_code + ".dat", 5000, step=True,potentialEnergy=True, temperature=True))
+        if report_production:
+            simulation.reporters.append(StateDataReporter("{}/production_{}.dat".format(file_path, file_name), num_steps//50000, step=True, potentialEnergy = True, temperature = True))
         simulation.reporters.append(HDF5Reporter(path, write_out_freq))
         simulation.step(num_steps)
 

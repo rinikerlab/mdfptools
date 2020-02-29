@@ -388,7 +388,7 @@ class LiquidParameteriser(BaseParameteriser):
 
         ligand_mdtraj = md.load(cls.pdb_filename)[0]
         #box_size = packmol.approximate_volume_by_density([smiles], [num_lig], density=density, 		box_scaleup_factor=1.1, box_buffer=2.0)
-        box_size = packmol.approximate_volume_by_density([smiles], [num_lig], density=density, 		box_scaleup_factor=1.5, box_buffer=2.0)
+        box_size = packmol.approximate_volume_by_density([cls.smiles], [num_lig], density=density, 		box_scaleup_factor=1.5, box_buffer=2.0)
         packmol_out = packmol.pack_box([ligand_mdtraj], [num_lig], box_size = box_size)
 
 
