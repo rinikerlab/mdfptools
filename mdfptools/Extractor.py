@@ -63,7 +63,12 @@ class BaseExtractor():
             forces = { force.__class__.__name__ : force for force in system.getForces() }
             nonbonded_force = forces['NonbondedForce']
             r_cutoff = nonbonded_force.getCutoffDistance()
+            try:
+                nonbonded_force.setReactionFieldDielectric(kwargs["solvent_dielectric"])
+            except KeyError or TypeError:
+                pass
             epsilon_solv = nonbonded_force.getReactionFieldDielectric()
+
             ONE_4PI_EPS0 = 138.935456
             c_rf = r_cutoff**(-1) * ((3*epsilon_solv) / (2*epsilon_solv + 1))
             k_rf = r_cutoff**(-3) * ((epsilon_solv - 1) / (2*epsilon_solv + 1))
@@ -740,6 +745,14 @@ class LiquidExtractor(BaseExtractor):
 
     """
     string_identifier = "liquid"
+
+    @classmethod
+    def _extract_energies_helper(cls, mdtraj_obj, parmed_obj, platform = "CPU", **kwargs):
+        try:
+            kwargs = {**kwargs , **{"solvent_dielectric" :  kwargs["liquid_solvent_dielectric"]}}
+        except:
+            pass
+        return super(LiquidExtractor, cls)._extract_energies_helper(mdtraj_obj, parmed_obj, platform, **kwargs)
 
     @classmethod
     def extract_h_bonds(cls, mdtraj_obj, **kwargs):

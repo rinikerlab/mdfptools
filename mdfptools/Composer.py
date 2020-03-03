@@ -210,7 +210,7 @@ class SolutionLiquidComposer(BaseComposer):
     Composer used to extract features from pairs of solution and liquid simulations.
     """
     @classmethod
-    def __init__(cls, solv_mdtraj_obj, solv_parmed_obj, liq_mdtraj_obj, liq_parmed_obj, smiles = None, **kwargs):
+    def run(cls, solv_mdtraj_obj, solv_parmed_obj, liq_mdtraj_obj, liq_parmed_obj, smiles = None, **kwargs):
         """
         Parameters
         -----------
@@ -233,8 +233,9 @@ class SolutionLiquidComposer(BaseComposer):
         cls.kwargs_solv = {**cls.kwargs_solv , **kwargs}
 
         if smiles is None:
-            if parmed_obj.title != '': #try to obtain it from `parmed_obj`
-                smiles = parmed_obj.title
+            if solv_parmed_obj.title != '' and liq_parmed_obj.title != '': #try to obtain it from `parmed_obj`
+                assert solv_parmed_obj.title == liq_parmed_obj.title, "Solution solute SMILES is not the same as the Liquid solute SMILES"
+                smiles = solv_parmed_obj.title
             else:
                 raise ValueError("Input ParMed Object does not contain SMILES string, add SMILES as an additional variable")
         return super().run(smiles)
