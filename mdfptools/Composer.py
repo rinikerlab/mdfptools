@@ -3,7 +3,8 @@ from rdkit.Chem import AllChem
 # from Per_Frame_Property_Extractor import *
 from .Extractor import *
 
-from numpy import mean, std, median
+from numpy import mean, std, median, isnan, array
+
 import functools
 
 class MDFP():
@@ -107,8 +108,9 @@ class BaseComposer():
         prop = property_extractor(**kwargs)
         for i in prop:
             fp[i] = []
+            tmp = prop[i]
             for func in statistical_moments:
-                 fp[i].append(func(prop[i]))
+                 fp[i].append(func(array(tmp)[~isnan(tmp)]))
         return fp
 
 """
