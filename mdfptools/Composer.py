@@ -108,9 +108,9 @@ class BaseComposer():
         prop = property_extractor(**kwargs)
         for i in prop:
             fp[i] = []
-            tmp = prop[i]
+            tmp = array(prop[i])
             for func in statistical_moments:
-                 fp[i].append(func(array(tmp)[~isnan(tmp)]))
+                 fp[i].append(func(tmp[~isnan(tmp)]))
         return fp
 
 """
