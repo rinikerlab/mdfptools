@@ -27,13 +27,19 @@ class MDFP():
         """
         self.mdfp = mdfp_dict
 
-    def get_mdfp(self):
+    def get_mdfp(self, which_keys = None): #TODO update doc
         """
         Returns
         ----------
         a list of floating values, i.e. the mdfp feature vector
         """
-        return functools.reduce(lambda a, b : a + b, self.mdfp.values())
+
+        if which_keys:
+            to_export = {i : self.mdfp[i]  for i in self.mdfp if i in which_keys}
+        else:
+            to_export = self.mdfp
+
+        return functools.reduce(lambda a, b : a + b, to_export.values())
 
     def __str__(self):
         return str(self.mdfp)
