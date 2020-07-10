@@ -1,0 +1,1072 @@
+Sender: LSF System <lsfadmin@eu-ms-003-05>
+Subject: Job 88717494: <CHEMBL2010836_pH7> in cluster <euler> Done
+
+Job <CHEMBL2010836_pH7> was submitted from host <eu-login-08-ng> by user <carmenes> in cluster <euler> at Sun Apr  7 09:47:56 2019
+Job was executed on host(s) <4*eu-ms-003-05>, in queue <normal.4h>, as user <carmenes> in cluster <euler> at Sun Apr  7 09:48:20 2019
+</cluster/home/carmenes> was used as the home directory.
+</cluster/work/igc/carmenes/Simulations_ChEMBL_water/nonsubstrates_water_box/dir_001> was used as the working directory.
+Started at Sun Apr  7 09:48:20 2019
+Terminated at Sun Apr  7 11:09:20 2019
+Results reported at Sun Apr  7 11:09:20 2019
+
+Your job looked like:
+
+------------------------------------------------------------
+# LSBATCH: User input
+export OMP_NUM_THREADS=1; cd ; cp /cluster/work/igc/carmenes/Simulations_ChEMBL_water/*mdp . ; cp /cluster/work/igc/carmenes/Simulations_ChEMBL_water/nonsubstrates_water_box/dir_001/*CHEMBL2010836_pH7_netcharge* . ; gmx_mpi grompp -f minim_wat.mdp -c CHEMBL2010836_pH7_netcharge.gro -p CHEMBL2010836_pH7_netcharge.top -n index_CHEMBL2010836_pH7_netcharge.ndx -o em_CHEMBL2010836_pH7_netcharge.tpr; mpirun -n 4 --cpus-per-proc 1 gmx_mpi mdrun -npme 0 -s em_CHEMBL2010836_pH7_netcharge.tpr -c em_CHEMBL2010836_pH7_netcharge.gro; wait; sleep 3; gmx_mpi grompp -f npt_wat_1b.mdp -c em_CHEMBL2010836_pH7_netcharge.gro -p CHEMBL2010836_pH7_netcharge.top -n index_CHEMBL2010836_pH7_netcharge.ndx -o npt1_CHEMBL2010836_pH7_netcharge.tpr; mpirun -n 4 --cpus-per-proc 1 gmx_mpi mdrun -npme 0 -s npt1_CHEMBL2010836_pH7_netcharge.tpr -c npt1_CHEMBL2010836_pH7_netcharge.gro -e npt1_CHEMBL2010836_pH7_netcharge.edr; wait; sleep 3; gmx_mpi grompp -f npt_wat_2b.mdp -c npt1_CHEMBL2010836_pH7_netcharge.gro -p CHEMBL2010836_pH7_netcharge.top -n index_CHEMBL2010836_pH7_netcharge.ndx -o npt2_CHEMBL2010836_pH7_netcharge.tpr; mpirun -n 4 --cpus-per-proc 1 gmx_mpi mdrun -npme 0 -s npt2_CHEMBL2010836_pH7_netcharge.tpr -c npt2_CHEMBL2010836_pH7_netcharge.gro -e npt2_CHEMBL2010836_pH7_netcharge.edr; wait; sleep 3; gmx_mpi grompp -f nvt_wat_3b.mdp -c npt2_CHEMBL2010836_pH7_netcharge.gro -p CHEMBL2010836_pH7_netcharge.top -n index_CHEMBL2010836_pH7_netcharge.ndx -o nvt3_CHEMBL2010836_pH7_netcharge.tpr; mpirun -n 4 --cpus-per-proc 1 gmx_mpi mdrun -npme 0 -s nvt3_CHEMBL2010836_pH7_netcharge.tpr -x nvt3_CHEMBL2010836_pH7_netcharge.xtc -cpo nvt3_CHEMBL2010836_pH7_netcharge.cpt -c nvt3_CHEMBL2010836_pH7_netcharge.gro -e nvt3_CHEMBL2010836_pH7_netcharge.edr; wait; sleep 3; 
+gmx_mpi trjconv -f nvt3_CHEMBL2010836_pH7_netcharge.gro -s nvt3_CHEMBL2010836_pH7_netcharge.tpr -o nvt3_CHEMBL2010836_pH7_netcharge.pdb << EOF
+0
+EOF
+
+gmx_mpi trjconv -f nvt3_CHEMBL2010836_pH7_netcharge.xtc -s nvt3_CHEMBL2010836_pH7_netcharge.tpr -n index_CHEMBL2010836_pH7_netcharge.ndx -pbc mol -ur compact -center -o center_nvt3_CHEMBL2010836_pH7_netcharge.xtc << EOF
+2
+0
+EOF
+
+wait 
+sleep 3
+
+gmx_mpi grompp -f nvt_rf_wat_3b.mdp -c nvt3_CHEMBL2010836_pH7_netcharge.gro -p CHEMBL2010836_pH7_netcharge.top -n index_CHEMBL2010836_pH7_netcharge.ndx -o nvt3_rf_CHEMBL2010836_pH7_netcharge.tpr
+gmx_mpi mdrun -s nvt3_rf_CHEMBL2010836_pH7_netcharge.tpr -rerun center_CHEMBL2010836_pH7_netcharge.top -e nvt3_rf_CHEMBL2010836_pH7_netcharge.edr
+gmx_mpi energy -f nvt3_rf_CHEMBL2010836_pH7_netcharge.edr -o nvt3_rf_CHEMBL2010836_pH7_netcharge.xvg <<EOF
+41
+42
+43
+44
+45
+46
+47
+48
+
+EOF
+
+rm CHEMBL2010836_pH7_netcharge.top
+rm \#*
+
+mv *CHEMBL2010836_pH7_netcharge* /cluster/work/igc/carmenes/Simulations_ChEMBL_water/nonsubstrates_water_box/dir_001/; wait
+------------------------------------------------------------
+
+Successfully completed.
+
+Resource usage summary:
+
+    CPU time :                                   19317.61 sec.
+    Max Memory :                                 1267 MB
+    Average Memory :                             603.48 MB
+    Total Requested Memory :                     4096.00 MB
+    Delta Memory :                               2829.00 MB
+    Max Swap :                                   -
+    Max Processes :                              7
+    Max Threads :                                8
+    Run time :                                   4880 sec.
+    Turnaround time :                            4884 sec.
+
+The output (if any) follows:
+
+libibverbs: Warning: couldn't open config directory '/etc/libibverbs.d'.
+libibverbs: Warning: no userspace device-specific driver found for /sys/class/infiniband_verbs/uverbs0
+--------------------------------------------------------------------------
+[[23864,1],0]: A high-performance Open MPI point-to-point messaging module
+was unable to find any relevant network interfaces:
+
+Module: OpenFabrics (openib)
+  Host: eu-ms-003-05
+
+Another transport will be used instead, although this may result in
+lower performance.
+--------------------------------------------------------------------------
+                  :-) GROMACS - gmx grompp, VERSION 5.1.4 (-:
+
+                            GROMACS is written by:
+     Emile Apol      Rossen Apostolov  Herman J.C. Berendsen    Par Bjelkmar   
+ Aldert van Buuren   Rudi van Drunen     Anton Feenstra   Sebastian Fritsch 
+  Gerrit Groenhof   Christoph Junghans   Anca Hamuraru    Vincent Hindriksen
+ Dimitrios Karkoulis    Peter Kasson        Jiri Kraus      Carsten Kutzner  
+    Per Larsson      Justin A. Lemkul   Magnus Lundborg   Pieter Meulenhoff 
+   Erik Marklund      Teemu Murtola       Szilard Pall       Sander Pronk   
+   Roland Schulz     Alexey Shvetsov     Michael Shirts     Alfons Sijbers  
+   Peter Tieleman    Teemu Virolainen  Christian Wennberg    Maarten Wolf   
+                           and the project leaders:
+        Mark Abraham, Berk Hess, Erik Lindahl, and David van der Spoel
+
+Copyright (c) 1991-2000, University of Groningen, The Netherlands.
+Copyright (c) 2001-2015, The GROMACS development team at
+Uppsala University, Stockholm University and
+the Royal Institute of Technology, Sweden.
+check out http://www.gromacs.org for more information.
+
+GROMACS is free software; you can redistribute it and/or modify it
+under the terms of the GNU Lesser General Public License
+as published by the Free Software Foundation; either version 2.1
+of the License, or (at your option) any later version.
+
+GROMACS:      gmx grompp, VERSION 5.1.4
+Executable:   /cluster/work/igc/carmenes/Softwares/gromacs/bin/gmx_mpi
+Data prefix:  /cluster/work/igc/carmenes/Softwares/gromacs
+Command line:
+  gmx_mpi grompp -f minim_wat.mdp -c CHEMBL2010836_pH7_netcharge.gro -p CHEMBL2010836_pH7_netcharge.top -n index_CHEMBL2010836_pH7_netcharge.ndx -o em_CHEMBL2010836_pH7_netcharge.tpr
+
+
+NOTE 1 [file minim_wat.mdp, line 16]:
+  minim_wat.mdp did not specify a value for the .mdp option
+  "cutoff-scheme". Probably it was first intended for use with GROMACS
+  before 4.6. In 4.6, the Verlet scheme was introduced, but the group
+  scheme was still the default. The default is now the Verlet scheme, so
+  you will observe different behaviour.
+
+
+NOTE 2 [file minim_wat.mdp]:
+  With Verlet lists the optimal nstlist is >= 10, with GPUs >= 20. Note
+  that with the Verlet scheme, nstlist has no effect on the accuracy of
+  your simulation.
+
+Setting the LD random seed to 4125448193
+Generated 210 of the 210 non-bonded parameter combinations
+Generating 1-4 interactions: fudge = 0.5
+Generated 210 of the 210 1-4 parameter combinations
+Excluding 3 bonded neighbours molecule type 'LIG'
+Excluding 3 bonded neighbours molecule type 'Cl-'
+Excluding 3 bonded neighbours molecule type 'WAT'
+Removing all charge groups because cutoff-scheme=Verlet
+Number of degrees of freedom in T-Coupling group rest is 14793.00
+Estimate for the relative computational load of the PME mesh part: 0.32
+
+There were 2 notes
+
+gcq#71: "Just Because the Sun Wants a Place In the Sky" (F. Zappa)
+
+Calculating fourier grid dimensions for X Y Z
+Using a fourier grid of 40x40x40, spacing 0.117 0.116 0.116
+This run will generate roughly 1 Mb of data
+libibverbs: Warning: couldn't open config directory '/etc/libibverbs.d'.
+libibverbs: Warning: no userspace device-specific driver found for /sys/class/infiniband_verbs/uverbs0
+--------------------------------------------------------------------------
+[[23867,1],0]: A high-performance Open MPI point-to-point messaging module
+was unable to find any relevant network interfaces:
+
+Module: OpenFabrics (openib)
+  Host: eu-ms-003-05
+
+Another transport will be used instead, although this may result in
+lower performance.
+--------------------------------------------------------------------------
+libibverbs: Warning: couldn't open config directory '/etc/libibverbs.d'.
+libibverbs: Warning: no userspace device-specific driver found for /sys/class/infiniband_verbs/uverbs0
+libibverbs: Warning: couldn't open config directory '/etc/libibverbs.d'.
+libibverbs: Warning: no userspace device-specific driver found for /sys/class/infiniband_verbs/uverbs0
+libibverbs: Warning: couldn't open config directory '/etc/libibverbs.d'.
+libibverbs: Warning: no userspace device-specific driver found for /sys/class/infiniband_verbs/uverbs0
+                   :-) GROMACS - gmx mdrun, VERSION 5.1.4 (-:
+
+                            GROMACS is written by:
+     Emile Apol      Rossen Apostolov  Herman J.C. Berendsen    Par Bjelkmar   
+ Aldert van Buuren   Rudi van Drunen     Anton Feenstra   Sebastian Fritsch 
+  Gerrit Groenhof   Christoph Junghans   Anca Hamuraru    Vincent Hindriksen
+ Dimitrios Karkoulis    Peter Kasson        Jiri Kraus      Carsten Kutzner  
+    Per Larsson      Justin A. Lemkul   Magnus Lundborg   Pieter Meulenhoff 
+   Erik Marklund      Teemu Murtola       Szilard Pall       Sander Pronk   
+   Roland Schulz     Alexey Shvetsov     Michael Shirts     Alfons Sijbers  
+   Peter Tieleman    Teemu Virolainen  Christian Wennberg    Maarten Wolf   
+                           and the project leaders:
+        Mark Abraham, Berk Hess, Erik Lindahl, and David van der Spoel
+
+Copyright (c) 1991-2000, University of Groningen, The Netherlands.
+Copyright (c) 2001-2015, The GROMACS development team at
+Uppsala University, Stockholm University and
+the Royal Institute of Technology, Sweden.
+check out http://www.gromacs.org for more information.
+
+GROMACS is free software; you can redistribute it and/or modify it
+under the terms of the GNU Lesser General Public License
+as published by the Free Software Foundation; either version 2.1
+of the License, or (at your option) any later version.
+
+GROMACS:      gmx mdrun, VERSION 5.1.4
+Executable:   /cluster/work/igc/carmenes/Softwares/gromacs/bin/gmx_mpi
+Data prefix:  /cluster/work/igc/carmenes/Softwares/gromacs
+Command line:
+  gmx_mpi mdrun -npme 0 -s em_CHEMBL2010836_pH7_netcharge.tpr -c em_CHEMBL2010836_pH7_netcharge.gro
+
+
+Number of logical cores detected (8) does not match the number reported by OpenMP (2).
+Consider setting the launch configuration manually!
+
+Running on 1 node with total 4 cores, 8 logical cores
+Hardware detected on host eu-ms-003-05 (the node of MPI rank 0):
+  CPU info:
+    Vendor: GenuineIntel
+    Brand:  Intel(R) Xeon(R) CPU E3-1585L v5 @ 3.00GHz
+    SIMD instructions most likely to fit this hardware: AVX2_256
+    SIMD instructions selected at GROMACS compile time: AVX2_256
+
+Reading file em_CHEMBL2010836_pH7_netcharge.tpr, VERSION 5.1.4 (single precision)
+The number of OpenMP threads was set by environment variable OMP_NUM_THREADS to 1
+Using 4 MPI processes
+Using 1 OpenMP thread per MPI process
+
+
+Non-default thread affinity set probably by the OpenMP library,
+disabling internal thread affinity
+
+Steepest Descents:
+   Tolerance (Fmax)   =  1.00000e+03
+   Number of steps    =        50000
+
+writing lowest energy coordinates.
+
+Steepest Descents converged to Fmax < 1000 in 119 steps
+Potential Energy  = -9.8567164e+04
+Maximum force     =  8.8856781e+02 on atom 29
+Norm of force     =  6.1050686e+01
+
+NOTE: 6 % of the run time was spent in domain decomposition,
+      17 % of the run time was spent in pair search,
+      you might want to increase nstlist (this has no effect on accuracy)
+
+
+gcq#539: "I'm no model lady. A model's just an imitation of the real thing." (Mae West)
+
+[eu-ms-003-05:26207] 3 more processes have sent help message help-mpi-btl-base.txt / btl:no-nics
+[eu-ms-003-05:26207] Set MCA parameter "orte_base_help_aggregate" to 0 to see all help / error messages
+libibverbs: Warning: couldn't open config directory '/etc/libibverbs.d'.
+libibverbs: Warning: no userspace device-specific driver found for /sys/class/infiniband_verbs/uverbs0
+--------------------------------------------------------------------------
+[[24038,1],0]: A high-performance Open MPI point-to-point messaging module
+was unable to find any relevant network interfaces:
+
+Module: OpenFabrics (openib)
+  Host: eu-ms-003-05
+
+Another transport will be used instead, although this may result in
+lower performance.
+--------------------------------------------------------------------------
+                  :-) GROMACS - gmx grompp, VERSION 5.1.4 (-:
+
+                            GROMACS is written by:
+     Emile Apol      Rossen Apostolov  Herman J.C. Berendsen    Par Bjelkmar   
+ Aldert van Buuren   Rudi van Drunen     Anton Feenstra   Sebastian Fritsch 
+  Gerrit Groenhof   Christoph Junghans   Anca Hamuraru    Vincent Hindriksen
+ Dimitrios Karkoulis    Peter Kasson        Jiri Kraus      Carsten Kutzner  
+    Per Larsson      Justin A. Lemkul   Magnus Lundborg   Pieter Meulenhoff 
+   Erik Marklund      Teemu Murtola       Szilard Pall       Sander Pronk   
+   Roland Schulz     Alexey Shvetsov     Michael Shirts     Alfons Sijbers  
+   Peter Tieleman    Teemu Virolainen  Christian Wennberg    Maarten Wolf   
+                           and the project leaders:
+        Mark Abraham, Berk Hess, Erik Lindahl, and David van der Spoel
+
+Copyright (c) 1991-2000, University of Groningen, The Netherlands.
+Copyright (c) 2001-2015, The GROMACS development team at
+Uppsala University, Stockholm University and
+the Royal Institute of Technology, Sweden.
+check out http://www.gromacs.org for more information.
+
+GROMACS is free software; you can redistribute it and/or modify it
+under the terms of the GNU Lesser General Public License
+as published by the Free Software Foundation; either version 2.1
+of the License, or (at your option) any later version.
+
+GROMACS:      gmx grompp, VERSION 5.1.4
+Executable:   /cluster/work/igc/carmenes/Softwares/gromacs/bin/gmx_mpi
+Data prefix:  /cluster/work/igc/carmenes/Softwares/gromacs
+Command line:
+  gmx_mpi grompp -f npt_wat_1b.mdp -c em_CHEMBL2010836_pH7_netcharge.gro -p CHEMBL2010836_pH7_netcharge.top -n index_CHEMBL2010836_pH7_netcharge.ndx -o npt1_CHEMBL2010836_pH7_netcharge.tpr
+
+Ignoring obsolete mdp entry 'title'
+Setting the LD random seed to 2009550369
+Generated 210 of the 210 non-bonded parameter combinations
+Generating 1-4 interactions: fudge = 0.5
+Generated 210 of the 210 1-4 parameter combinations
+Excluding 3 bonded neighbours molecule type 'LIG'
+Excluding 3 bonded neighbours molecule type 'Cl-'
+Excluding 3 bonded neighbours molecule type 'WAT'
+Setting gen_seed to 1810793132
+Velocities were taken from a Maxwell distribution at 300 K
+Removing all charge groups because cutoff-scheme=Verlet
+Number of degrees of freedom in T-Coupling group LIG is 114.98
+Number of degrees of freedom in T-Coupling group Water_and_ions is 14616.02
+Estimate for the relative computational load of the PME mesh part: 0.28
+
+gcq#584: "Creativity in science, as in art, cannot be organized. It arises spontaneously from individual talent. Well-run laboratories can foster it, but hierarchical organizations, inflexible bureaucratic rules, and mountains of futile paperwork can kill it." (Max Perutz)
+
+turning all bonds into constraints...
+turning all bonds into constraints...
+turning all bonds into constraints...
+Determining Verlet buffer for a tolerance of 0.005 kJ/mol/ps at 298.15 K
+Calculated rlist for 1x1 atom pair-list as 1.031 nm, buffer size 0.031 nm
+Set rlist, assuming 4x4 atom pair-list, to 1.000 nm, buffer size 0.000 nm
+Note that mdrun will redetermine rlist based on the actual pair-list setup
+Calculating fourier grid dimensions for X Y Z
+Using a fourier grid of 32x32x32, spacing 0.146 0.145 0.145
+This run will generate roughly 9 Mb of data
+libibverbs: Warning: couldn't open config directory '/etc/libibverbs.d'.
+libibverbs: Warning: no userspace device-specific driver found for /sys/class/infiniband_verbs/uverbs0
+--------------------------------------------------------------------------
+[[24032,1],0]: A high-performance Open MPI point-to-point messaging module
+was unable to find any relevant network interfaces:
+
+Module: OpenFabrics (openib)
+  Host: eu-ms-003-05
+
+Another transport will be used instead, although this may result in
+lower performance.
+--------------------------------------------------------------------------
+libibverbs: Warning: couldn't open config directory '/etc/libibverbs.d'.
+libibverbs: Warning: no userspace device-specific driver found for /sys/class/infiniband_verbs/uverbs0
+libibverbs: Warning: couldn't open config directory '/etc/libibverbs.d'.
+libibverbs: Warning: no userspace device-specific driver found for /sys/class/infiniband_verbs/uverbs0
+libibverbs: Warning: couldn't open config directory '/etc/libibverbs.d'.
+libibverbs: Warning: no userspace device-specific driver found for /sys/class/infiniband_verbs/uverbs0
+                   :-) GROMACS - gmx mdrun, VERSION 5.1.4 (-:
+
+                            GROMACS is written by:
+     Emile Apol      Rossen Apostolov  Herman J.C. Berendsen    Par Bjelkmar   
+ Aldert van Buuren   Rudi van Drunen     Anton Feenstra   Sebastian Fritsch 
+  Gerrit Groenhof   Christoph Junghans   Anca Hamuraru    Vincent Hindriksen
+ Dimitrios Karkoulis    Peter Kasson        Jiri Kraus      Carsten Kutzner  
+    Per Larsson      Justin A. Lemkul   Magnus Lundborg   Pieter Meulenhoff 
+   Erik Marklund      Teemu Murtola       Szilard Pall       Sander Pronk   
+   Roland Schulz     Alexey Shvetsov     Michael Shirts     Alfons Sijbers  
+   Peter Tieleman    Teemu Virolainen  Christian Wennberg    Maarten Wolf   
+                           and the project leaders:
+        Mark Abraham, Berk Hess, Erik Lindahl, and David van der Spoel
+
+Copyright (c) 1991-2000, University of Groningen, The Netherlands.
+Copyright (c) 2001-2015, The GROMACS development team at
+Uppsala University, Stockholm University and
+the Royal Institute of Technology, Sweden.
+check out http://www.gromacs.org for more information.
+
+GROMACS is free software; you can redistribute it and/or modify it
+under the terms of the GNU Lesser General Public License
+as published by the Free Software Foundation; either version 2.1
+of the License, or (at your option) any later version.
+
+GROMACS:      gmx mdrun, VERSION 5.1.4
+Executable:   /cluster/work/igc/carmenes/Softwares/gromacs/bin/gmx_mpi
+Data prefix:  /cluster/work/igc/carmenes/Softwares/gromacs
+Command line:
+  gmx_mpi mdrun -npme 0 -s npt1_CHEMBL2010836_pH7_netcharge.tpr -c npt1_CHEMBL2010836_pH7_netcharge.gro -e npt1_CHEMBL2010836_pH7_netcharge.edr
+
+
+Number of logical cores detected (8) does not match the number reported by OpenMP (2).
+Consider setting the launch configuration manually!
+
+Running on 1 node with total 4 cores, 8 logical cores
+Hardware detected on host eu-ms-003-05 (the node of MPI rank 0):
+  CPU info:
+    Vendor: GenuineIntel
+    Brand:  Intel(R) Xeon(R) CPU E3-1585L v5 @ 3.00GHz
+    SIMD instructions most likely to fit this hardware: AVX2_256
+    SIMD instructions selected at GROMACS compile time: AVX2_256
+
+Reading file npt1_CHEMBL2010836_pH7_netcharge.tpr, VERSION 5.1.4 (single precision)
+Changing nstlist from 10 to 20, rlist from 1 to 1.021
+
+The number of OpenMP threads was set by environment variable OMP_NUM_THREADS to 1
+Using 4 MPI processes
+Using 1 OpenMP thread per MPI process
+
+
+Non-default thread affinity set probably by the OpenMP library,
+disabling internal thread affinity
+starting mdrun 'Generic title'
+25000 steps,     50.0 ps.
+
+NOTE: Turning on dynamic load balancing
+
+[eu-ms-003-05:26244] 3 more processes have sent help message help-mpi-btl-base.txt / btl:no-nics
+[eu-ms-003-05:26244] Set MCA parameter "orte_base_help_aggregate" to 0 to see all help / error messages
+
+Writing final coordinates.
+
+ Average load imbalance: 0.9 %
+ Part of the total run time spent waiting due to load imbalance: 0.6 %
+ Steps where the load balancing was limited by -rdd, -rcon and/or -dds: X 0 %
+
+
+               Core t (s)   Wall t (s)        (%)
+       Time:      159.042       39.768      399.9
+                 (ns/day)    (hour/ns)
+Performance:      108.635        0.221
+
+gcq#565: "Programming today is a race between software engineers striving to build bigger and better idiot-proof programs, and the universe trying to build bigger and better idiots. So far, the universe is winning." (Rick Cook)
+
+libibverbs: Warning: couldn't open config directory '/etc/libibverbs.d'.
+libibverbs: Warning: no userspace device-specific driver found for /sys/class/infiniband_verbs/uverbs0
+--------------------------------------------------------------------------
+[[23961,1],0]: A high-performance Open MPI point-to-point messaging module
+was unable to find any relevant network interfaces:
+
+Module: OpenFabrics (openib)
+  Host: eu-ms-003-05
+
+Another transport will be used instead, although this may result in
+lower performance.
+--------------------------------------------------------------------------
+                  :-) GROMACS - gmx grompp, VERSION 5.1.4 (-:
+
+                            GROMACS is written by:
+     Emile Apol      Rossen Apostolov  Herman J.C. Berendsen    Par Bjelkmar   
+ Aldert van Buuren   Rudi van Drunen     Anton Feenstra   Sebastian Fritsch 
+  Gerrit Groenhof   Christoph Junghans   Anca Hamuraru    Vincent Hindriksen
+ Dimitrios Karkoulis    Peter Kasson        Jiri Kraus      Carsten Kutzner  
+    Per Larsson      Justin A. Lemkul   Magnus Lundborg   Pieter Meulenhoff 
+   Erik Marklund      Teemu Murtola       Szilard Pall       Sander Pronk   
+   Roland Schulz     Alexey Shvetsov     Michael Shirts     Alfons Sijbers  
+   Peter Tieleman    Teemu Virolainen  Christian Wennberg    Maarten Wolf   
+                           and the project leaders:
+        Mark Abraham, Berk Hess, Erik Lindahl, and David van der Spoel
+
+Copyright (c) 1991-2000, University of Groningen, The Netherlands.
+Copyright (c) 2001-2015, The GROMACS development team at
+Uppsala University, Stockholm University and
+the Royal Institute of Technology, Sweden.
+check out http://www.gromacs.org for more information.
+
+GROMACS is free software; you can redistribute it and/or modify it
+under the terms of the GNU Lesser General Public License
+as published by the Free Software Foundation; either version 2.1
+of the License, or (at your option) any later version.
+
+GROMACS:      gmx grompp, VERSION 5.1.4
+Executable:   /cluster/work/igc/carmenes/Softwares/gromacs/bin/gmx_mpi
+Data prefix:  /cluster/work/igc/carmenes/Softwares/gromacs
+Command line:
+  gmx_mpi grompp -f npt_wat_2b.mdp -c npt1_CHEMBL2010836_pH7_netcharge.gro -p CHEMBL2010836_pH7_netcharge.top -n index_CHEMBL2010836_pH7_netcharge.ndx -o npt2_CHEMBL2010836_pH7_netcharge.tpr
+
+Ignoring obsolete mdp entry 'title'
+
+NOTE 1 [file npt_wat_2b.mdp]:
+  leapfrog does not yet support Nose-Hoover chains, nhchainlength reset to 1
+
+Setting the LD random seed to 334872688
+Generated 210 of the 210 non-bonded parameter combinations
+Generating 1-4 interactions: fudge = 0.5
+Generated 210 of the 210 1-4 parameter combinations
+Excluding 3 bonded neighbours molecule type 'LIG'
+Excluding 3 bonded neighbours molecule type 'Cl-'
+Excluding 3 bonded neighbours molecule type 'WAT'
+Removing all charge groups because cutoff-scheme=Verlet
+Number of degrees of freedom in T-Coupling group LIG is 114.98
+Number of degrees of freedom in T-Coupling group Water_and_ions is 14616.02
+Estimate for the relative computational load of the PME mesh part: 0.22
+
+There was 1 note
+
+gcq#99: "My Heart is Just a Muscle In a Cavity" (F. Black)
+
+turning all bonds into constraints...
+turning all bonds into constraints...
+turning all bonds into constraints...
+Determining Verlet buffer for a tolerance of 0.005 kJ/mol/ps at 298.15 K
+Calculated rlist for 1x1 atom pair-list as 1.035 nm, buffer size 0.035 nm
+Set rlist, assuming 4x4 atom pair-list, to 1.000 nm, buffer size 0.000 nm
+Note that mdrun will redetermine rlist based on the actual pair-list setup
+Calculating fourier grid dimensions for X Y Z
+Using a fourier grid of 28x28x28, spacing 0.151 0.150 0.150
+This run will generate roughly 9 Mb of data
+libibverbs: Warning: couldn't open config directory '/etc/libibverbs.d'.
+libibverbs: Warning: no userspace device-specific driver found for /sys/class/infiniband_verbs/uverbs0
+--------------------------------------------------------------------------
+[[23652,1],0]: A high-performance Open MPI point-to-point messaging module
+was unable to find any relevant network interfaces:
+
+Module: OpenFabrics (openib)
+  Host: eu-ms-003-05
+
+Another transport will be used instead, although this may result in
+lower performance.
+--------------------------------------------------------------------------
+libibverbs: Warning: couldn't open config directory '/etc/libibverbs.d'.
+libibverbs: Warning: no userspace device-specific driver found for /sys/class/infiniband_verbs/uverbs0
+libibverbs: Warning: couldn't open config directory '/etc/libibverbs.d'.
+libibverbs: Warning: no userspace device-specific driver found for /sys/class/infiniband_verbs/uverbs0
+libibverbs: Warning: couldn't open config directory '/etc/libibverbs.d'.
+libibverbs: Warning: no userspace device-specific driver found for /sys/class/infiniband_verbs/uverbs0
+                   :-) GROMACS - gmx mdrun, VERSION 5.1.4 (-:
+
+                            GROMACS is written by:
+     Emile Apol      Rossen Apostolov  Herman J.C. Berendsen    Par Bjelkmar   
+ Aldert van Buuren   Rudi van Drunen     Anton Feenstra   Sebastian Fritsch 
+  Gerrit Groenhof   Christoph Junghans   Anca Hamuraru    Vincent Hindriksen
+ Dimitrios Karkoulis    Peter Kasson        Jiri Kraus      Carsten Kutzner  
+    Per Larsson      Justin A. Lemkul   Magnus Lundborg   Pieter Meulenhoff 
+   Erik Marklund      Teemu Murtola       Szilard Pall       Sander Pronk   
+   Roland Schulz     Alexey Shvetsov     Michael Shirts     Alfons Sijbers  
+   Peter Tieleman    Teemu Virolainen  Christian Wennberg    Maarten Wolf   
+                           and the project leaders:
+        Mark Abraham, Berk Hess, Erik Lindahl, and David van der Spoel
+
+Copyright (c) 1991-2000, University of Groningen, The Netherlands.
+Copyright (c) 2001-2015, The GROMACS development team at
+Uppsala University, Stockholm University and
+the Royal Institute of Technology, Sweden.
+check out http://www.gromacs.org for more information.
+
+GROMACS is free software; you can redistribute it and/or modify it
+under the terms of the GNU Lesser General Public License
+as published by the Free Software Foundation; either version 2.1
+of the License, or (at your option) any later version.
+
+GROMACS:      gmx mdrun, VERSION 5.1.4
+Executable:   /cluster/work/igc/carmenes/Softwares/gromacs/bin/gmx_mpi
+Data prefix:  /cluster/work/igc/carmenes/Softwares/gromacs
+Command line:
+  gmx_mpi mdrun -npme 0 -s npt2_CHEMBL2010836_pH7_netcharge.tpr -c npt2_CHEMBL2010836_pH7_netcharge.gro -e npt2_CHEMBL2010836_pH7_netcharge.edr
+
+
+Number of logical cores detected (8) does not match the number reported by OpenMP (2).
+Consider setting the launch configuration manually!
+
+Running on 1 node with total 4 cores, 8 logical cores
+Hardware detected on host eu-ms-003-05 (the node of MPI rank 0):
+  CPU info:
+    Vendor: GenuineIntel
+    Brand:  Intel(R) Xeon(R) CPU E3-1585L v5 @ 3.00GHz
+    SIMD instructions most likely to fit this hardware: AVX2_256
+    SIMD instructions selected at GROMACS compile time: AVX2_256
+
+Reading file npt2_CHEMBL2010836_pH7_netcharge.tpr, VERSION 5.1.4 (single precision)
+Changing nstlist from 10 to 20, rlist from 1 to 1.029
+
+The number of OpenMP threads was set by environment variable OMP_NUM_THREADS to 1
+Using 4 MPI processes
+Using 1 OpenMP thread per MPI process
+
+
+Non-default thread affinity set probably by the OpenMP library,
+disabling internal thread affinity
+starting mdrun 'Generic title'
+25000 steps,     50.0 ps.
+[eu-ms-003-05:26368] 3 more processes have sent help message help-mpi-btl-base.txt / btl:no-nics
+[eu-ms-003-05:26368] Set MCA parameter "orte_base_help_aggregate" to 0 to see all help / error messages
+
+NOTE: Turning on dynamic load balancing
+
+
+Writing final coordinates.
+
+ Average load imbalance: 1.0 %
+ Part of the total run time spent waiting due to load imbalance: 0.6 %
+ Steps where the load balancing was limited by -rdd, -rcon and/or -dds: X 0 %
+
+
+               Core t (s)   Wall t (s)        (%)
+       Time:      179.811       44.984      399.7
+                 (ns/day)    (hour/ns)
+Performance:       96.037        0.250
+
+gcq#393: "On the East coast, a purple patch, to show where the jolly pioneers of progress drink the jolly lager-beer" (Joseph Conrad)
+
+libibverbs: Warning: couldn't open config directory '/etc/libibverbs.d'.
+libibverbs: Warning: no userspace device-specific driver found for /sys/class/infiniband_verbs/uverbs0
+--------------------------------------------------------------------------
+[[21344,1],0]: A high-performance Open MPI point-to-point messaging module
+was unable to find any relevant network interfaces:
+
+Module: OpenFabrics (openib)
+  Host: eu-ms-003-05
+
+Another transport will be used instead, although this may result in
+lower performance.
+--------------------------------------------------------------------------
+                  :-) GROMACS - gmx grompp, VERSION 5.1.4 (-:
+
+                            GROMACS is written by:
+     Emile Apol      Rossen Apostolov  Herman J.C. Berendsen    Par Bjelkmar   
+ Aldert van Buuren   Rudi van Drunen     Anton Feenstra   Sebastian Fritsch 
+  Gerrit Groenhof   Christoph Junghans   Anca Hamuraru    Vincent Hindriksen
+ Dimitrios Karkoulis    Peter Kasson        Jiri Kraus      Carsten Kutzner  
+    Per Larsson      Justin A. Lemkul   Magnus Lundborg   Pieter Meulenhoff 
+   Erik Marklund      Teemu Murtola       Szilard Pall       Sander Pronk   
+   Roland Schulz     Alexey Shvetsov     Michael Shirts     Alfons Sijbers  
+   Peter Tieleman    Teemu Virolainen  Christian Wennberg    Maarten Wolf   
+                           and the project leaders:
+        Mark Abraham, Berk Hess, Erik Lindahl, and David van der Spoel
+
+Copyright (c) 1991-2000, University of Groningen, The Netherlands.
+Copyright (c) 2001-2015, The GROMACS development team at
+Uppsala University, Stockholm University and
+the Royal Institute of Technology, Sweden.
+check out http://www.gromacs.org for more information.
+
+GROMACS is free software; you can redistribute it and/or modify it
+under the terms of the GNU Lesser General Public License
+as published by the Free Software Foundation; either version 2.1
+of the License, or (at your option) any later version.
+
+GROMACS:      gmx grompp, VERSION 5.1.4
+Executable:   /cluster/work/igc/carmenes/Softwares/gromacs/bin/gmx_mpi
+Data prefix:  /cluster/work/igc/carmenes/Softwares/gromacs
+Command line:
+  gmx_mpi grompp -f nvt_wat_3b.mdp -c npt2_CHEMBL2010836_pH7_netcharge.gro -p CHEMBL2010836_pH7_netcharge.top -n index_CHEMBL2010836_pH7_netcharge.ndx -o nvt3_CHEMBL2010836_pH7_netcharge.tpr
+
+Ignoring obsolete mdp entry 'title'
+Replacing old mdp entry 'nstxtcout' by 'nstxout-compressed'
+Setting the LD random seed to 1412577168
+Generated 210 of the 210 non-bonded parameter combinations
+Generating 1-4 interactions: fudge = 0.5
+Generated 210 of the 210 1-4 parameter combinations
+Excluding 3 bonded neighbours molecule type 'LIG'
+Excluding 3 bonded neighbours molecule type 'Cl-'
+Excluding 3 bonded neighbours molecule type 'WAT'
+Removing all charge groups because cutoff-scheme=Verlet
+Number of degrees of freedom in T-Coupling group LIG is 114.98
+Number of degrees of freedom in T-Coupling group Water_and_ions is 14616.02
+Estimate for the relative computational load of the PME mesh part: 0.22
+
+gcq#32: "I'm Only Faking When I Get It Right" (Soundgarden)
+
+turning all bonds into constraints...
+turning all bonds into constraints...
+turning all bonds into constraints...
+Determining Verlet buffer for a tolerance of 0.005 kJ/mol/ps at 298.15 K
+Calculated rlist for 1x1 atom pair-list as 1.035 nm, buffer size 0.035 nm
+Set rlist, assuming 4x4 atom pair-list, to 1.000 nm, buffer size 0.000 nm
+Note that mdrun will redetermine rlist based on the actual pair-list setup
+Calculating fourier grid dimensions for X Y Z
+Using a fourier grid of 28x28x28, spacing 0.151 0.150 0.150
+This run will generate roughly 1039 Mb of data
+libibverbs: Warning: couldn't open config directory '/etc/libibverbs.d'.
+libibverbs: Warning: no userspace device-specific driver found for /sys/class/infiniband_verbs/uverbs0
+--------------------------------------------------------------------------
+[[21347,1],0]: A high-performance Open MPI point-to-point messaging module
+was unable to find any relevant network interfaces:
+
+Module: OpenFabrics (openib)
+  Host: eu-ms-003-05
+
+Another transport will be used instead, although this may result in
+lower performance.
+--------------------------------------------------------------------------
+libibverbs: Warning: couldn't open config directory '/etc/libibverbs.d'.
+libibverbs: Warning: no userspace device-specific driver found for /sys/class/infiniband_verbs/uverbs0
+libibverbs: Warning: couldn't open config directory '/etc/libibverbs.d'.
+libibverbs: Warning: no userspace device-specific driver found for /sys/class/infiniband_verbs/uverbs0
+libibverbs: Warning: couldn't open config directory '/etc/libibverbs.d'.
+libibverbs: Warning: no userspace device-specific driver found for /sys/class/infiniband_verbs/uverbs0
+                   :-) GROMACS - gmx mdrun, VERSION 5.1.4 (-:
+
+                            GROMACS is written by:
+     Emile Apol      Rossen Apostolov  Herman J.C. Berendsen    Par Bjelkmar   
+ Aldert van Buuren   Rudi van Drunen     Anton Feenstra   Sebastian Fritsch 
+  Gerrit Groenhof   Christoph Junghans   Anca Hamuraru    Vincent Hindriksen
+ Dimitrios Karkoulis    Peter Kasson        Jiri Kraus      Carsten Kutzner  
+    Per Larsson      Justin A. Lemkul   Magnus Lundborg   Pieter Meulenhoff 
+   Erik Marklund      Teemu Murtola       Szilard Pall       Sander Pronk   
+   Roland Schulz     Alexey Shvetsov     Michael Shirts     Alfons Sijbers  
+   Peter Tieleman    Teemu Virolainen  Christian Wennberg    Maarten Wolf   
+                           and the project leaders:
+        Mark Abraham, Berk Hess, Erik Lindahl, and David van der Spoel
+
+Copyright (c) 1991-2000, University of Groningen, The Netherlands.
+Copyright (c) 2001-2015, The GROMACS development team at
+Uppsala University, Stockholm University and
+the Royal Institute of Technology, Sweden.
+check out http://www.gromacs.org for more information.
+
+GROMACS is free software; you can redistribute it and/or modify it
+under the terms of the GNU Lesser General Public License
+as published by the Free Software Foundation; either version 2.1
+of the License, or (at your option) any later version.
+
+GROMACS:      gmx mdrun, VERSION 5.1.4
+Executable:   /cluster/work/igc/carmenes/Softwares/gromacs/bin/gmx_mpi
+Data prefix:  /cluster/work/igc/carmenes/Softwares/gromacs
+Command line:
+  gmx_mpi mdrun -npme 0 -s nvt3_CHEMBL2010836_pH7_netcharge.tpr -x nvt3_CHEMBL2010836_pH7_netcharge.xtc -cpo nvt3_CHEMBL2010836_pH7_netcharge.cpt -c nvt3_CHEMBL2010836_pH7_netcharge.gro -e nvt3_CHEMBL2010836_pH7_netcharge.edr
+
+
+Number of logical cores detected (8) does not match the number reported by OpenMP (2).
+Consider setting the launch configuration manually!
+
+Running on 1 node with total 4 cores, 8 logical cores
+Hardware detected on host eu-ms-003-05 (the node of MPI rank 0):
+  CPU info:
+    Vendor: GenuineIntel
+    Brand:  Intel(R) Xeon(R) CPU E3-1585L v5 @ 3.00GHz
+    SIMD instructions most likely to fit this hardware: AVX2_256
+    SIMD instructions selected at GROMACS compile time: AVX2_256
+
+Reading file nvt3_CHEMBL2010836_pH7_netcharge.tpr, VERSION 5.1.4 (single precision)
+Changing nstlist from 10 to 20, rlist from 1 to 1.029
+
+The number of OpenMP threads was set by environment variable OMP_NUM_THREADS to 1
+Using 4 MPI processes
+Using 1 OpenMP thread per MPI process
+
+
+Non-default thread affinity set probably by the OpenMP library,
+disabling internal thread affinity
+starting mdrun 'Generic title'
+2500000 steps,   5000.0 ps.
+[eu-ms-003-05:26631] 3 more processes have sent help message help-mpi-btl-base.txt / btl:no-nics
+[eu-ms-003-05:26631] Set MCA parameter "orte_base_help_aggregate" to 0 to see all help / error messages
+
+Writing final coordinates.
+
+ Average load imbalance: 2.1 %
+ Part of the total run time spent waiting due to load imbalance: 1.3 %
+
+
+               Core t (s)   Wall t (s)        (%)
+       Time:    18961.789     4743.531      399.7
+                         1h19:03
+                 (ns/day)    (hour/ns)
+Performance:       91.071        0.264
+
+gcq#166: "The Poodle Bites" (F. Zappa)
+
+libibverbs: Warning: couldn't open config directory '/etc/libibverbs.d'.
+libibverbs: Warning: no userspace device-specific driver found for /sys/class/infiniband_verbs/uverbs0
+--------------------------------------------------------------------------
+[[4371,1],0]: A high-performance Open MPI point-to-point messaging module
+was unable to find any relevant network interfaces:
+
+Module: OpenFabrics (openib)
+  Host: eu-ms-003-05
+
+Another transport will be used instead, although this may result in
+lower performance.
+--------------------------------------------------------------------------
+                  :-) GROMACS - gmx trjconv, VERSION 5.1.4 (-:
+
+                            GROMACS is written by:
+     Emile Apol      Rossen Apostolov  Herman J.C. Berendsen    Par Bjelkmar   
+ Aldert van Buuren   Rudi van Drunen     Anton Feenstra   Sebastian Fritsch 
+  Gerrit Groenhof   Christoph Junghans   Anca Hamuraru    Vincent Hindriksen
+ Dimitrios Karkoulis    Peter Kasson        Jiri Kraus      Carsten Kutzner  
+    Per Larsson      Justin A. Lemkul   Magnus Lundborg   Pieter Meulenhoff 
+   Erik Marklund      Teemu Murtola       Szilard Pall       Sander Pronk   
+   Roland Schulz     Alexey Shvetsov     Michael Shirts     Alfons Sijbers  
+   Peter Tieleman    Teemu Virolainen  Christian Wennberg    Maarten Wolf   
+                           and the project leaders:
+        Mark Abraham, Berk Hess, Erik Lindahl, and David van der Spoel
+
+Copyright (c) 1991-2000, University of Groningen, The Netherlands.
+Copyright (c) 2001-2015, The GROMACS development team at
+Uppsala University, Stockholm University and
+the Royal Institute of Technology, Sweden.
+check out http://www.gromacs.org for more information.
+
+GROMACS is free software; you can redistribute it and/or modify it
+under the terms of the GNU Lesser General Public License
+as published by the Free Software Foundation; either version 2.1
+of the License, or (at your option) any later version.
+
+GROMACS:      gmx trjconv, VERSION 5.1.4
+Executable:   /cluster/work/igc/carmenes/Softwares/gromacs/bin/gmx_mpi
+Data prefix:  /cluster/work/igc/carmenes/Softwares/gromacs
+Command line:
+  gmx_mpi trjconv -f nvt3_CHEMBL2010836_pH7_netcharge.gro -s nvt3_CHEMBL2010836_pH7_netcharge.tpr -o nvt3_CHEMBL2010836_pH7_netcharge.pdb
+
+Will write pdb: Protein data bank file
+Reading file nvt3_CHEMBL2010836_pH7_netcharge.tpr, VERSION 5.1.4 (single precision)
+Reading file nvt3_CHEMBL2010836_pH7_netcharge.tpr, VERSION 5.1.4 (single precision)
+Group     0 (         System) has  7368 elements
+Group     1 (          Other) has    59 elements
+Group     2 (            LIG) has    59 elements
+Group     3 (            Cl-) has     1 elements
+Group     4 (            Ion) has     1 elements
+Group     5 (            LIG) has    59 elements
+Group     6 (            Cl-) has     1 elements
+Group     7 (          Water) has  7308 elements
+Group     8 (            SOL) has  7308 elements
+Group     9 (      non-Water) has    60 elements
+Group    10 ( Water_and_ions) has  7309 elements
+Select a group: Reading frames from gro file 'Generic title', 7368 atoms.
+Reading frame       0 time    0.000   
+Precision of nvt3_CHEMBL2010836_pH7_netcharge.gro is 0.001 (nm)
+ ->  frame      0 time    0.000      Last frame          0 time    0.000   
+
+
+gcq#126: "The Carpenter Goes Bang Bang" (The Breeders)
+
+Select group for output
+Selected 0: 'System'
+libibverbs: Warning: couldn't open config directory '/etc/libibverbs.d'.
+libibverbs: Warning: no userspace device-specific driver found for /sys/class/infiniband_verbs/uverbs0
+--------------------------------------------------------------------------
+[[4579,1],0]: A high-performance Open MPI point-to-point messaging module
+was unable to find any relevant network interfaces:
+
+Module: OpenFabrics (openib)
+  Host: eu-ms-003-05
+
+Another transport will be used instead, although this may result in
+lower performance.
+--------------------------------------------------------------------------
+                  :-) GROMACS - gmx trjconv, VERSION 5.1.4 (-:
+
+                            GROMACS is written by:
+     Emile Apol      Rossen Apostolov  Herman J.C. Berendsen    Par Bjelkmar   
+ Aldert van Buuren   Rudi van Drunen     Anton Feenstra   Sebastian Fritsch 
+  Gerrit Groenhof   Christoph Junghans   Anca Hamuraru    Vincent Hindriksen
+ Dimitrios Karkoulis    Peter Kasson        Jiri Kraus      Carsten Kutzner  
+    Per Larsson      Justin A. Lemkul   Magnus Lundborg   Pieter Meulenhoff 
+   Erik Marklund      Teemu Murtola       Szilard Pall       Sander Pronk   
+   Roland Schulz     Alexey Shvetsov     Michael Shirts     Alfons Sijbers  
+   Peter Tieleman    Teemu Virolainen  Christian Wennberg    Maarten Wolf   
+                           and the project leaders:
+        Mark Abraham, Berk Hess, Erik Lindahl, and David van der Spoel
+
+Copyright (c) 1991-2000, University of Groningen, The Netherlands.
+Copyright (c) 2001-2015, The GROMACS development team at
+Uppsala University, Stockholm University and
+the Royal Institute of Technology, Sweden.
+check out http://www.gromacs.org for more information.
+
+GROMACS is free software; you can redistribute it and/or modify it
+under the terms of the GNU Lesser General Public License
+as published by the Free Software Foundation; either version 2.1
+of the License, or (at your option) any later version.
+
+GROMACS:      gmx trjconv, VERSION 5.1.4
+Executable:   /cluster/work/igc/carmenes/Softwares/gromacs/bin/gmx_mpi
+Data prefix:  /cluster/work/igc/carmenes/Softwares/gromacs
+Command line:
+  gmx_mpi trjconv -f nvt3_CHEMBL2010836_pH7_netcharge.xtc -s nvt3_CHEMBL2010836_pH7_netcharge.tpr -n index_CHEMBL2010836_pH7_netcharge.ndx -pbc mol -ur compact -center -o center_nvt3_CHEMBL2010836_pH7_netcharge.xtc
+
+Will write xtc: Compressed trajectory (portable xdr format): xtc
+Reading file nvt3_CHEMBL2010836_pH7_netcharge.tpr, VERSION 5.1.4 (single precision)
+Reading file nvt3_CHEMBL2010836_pH7_netcharge.tpr, VERSION 5.1.4 (single precision)
+Group     0 (         System) has  7368 elements
+Group     1 (          Other) has    59 elements
+Group     2 (            LIG) has    59 elements
+Group     3 (            Cl-) has     1 elements
+Group     4 (            Ion) has     1 elements
+Group     5 (            LIG) has    59 elements
+Group     6 (            Cl-) has     1 elements
+Group     7 (          Water) has  7308 elements
+Group     8 (            SOL) has  7308 elements
+Group     9 (      non-Water) has    60 elements
+Group    10 ( Water_and_ions) has  7309 elements
+Select a group: Group     0 (         System) has  7368 elements
+Group     1 (          Other) has    59 elements
+Group     2 (            LIG) has    59 elements
+Group     3 (            Cl-) has     1 elements
+Group     4 (            Ion) has     1 elements
+Group     5 (            LIG) has    59 elements
+Group     6 (            Cl-) has     1 elements
+Group     7 (          Water) has  7308 elements
+Group     8 (            SOL) has  7308 elements
+Group     9 (      non-Water) has    60 elements
+Group    10 ( Water_and_ions) has  7309 elements
+Select a group: Reading frame       0 time    0.000   
+Precision of nvt3_CHEMBL2010836_pH7_netcharge.xtc is 0.001 (nm)
+Using output precision of 0.001 (nm)
+ ->  frame      0 time    0.000      Reading frame       1 time    1.000    ->  frame      1 time    1.000      Reading frame       2 time    2.000    ->  frame      2 time    2.000      Reading frame       3 time    3.000    ->  frame      3 time    3.000      Reading frame       4 time    4.000    ->  frame      4 time    4.000      Reading frame       5 time    5.000    ->  frame      5 time    5.000      Reading frame       6 time    6.000    ->  frame      6 time    6.000      Reading frame       7 time    7.000    ->  frame      7 time    7.000      Reading frame       8 time    8.000    ->  frame      8 time    8.000      Reading frame       9 time    9.000    ->  frame      9 time    9.000      Reading frame      10 time   10.000    ->  frame     10 time   10.000      Reading frame      11 time   11.000   Reading frame      12 time   12.000   Reading frame      13 time   13.000   Reading frame      14 time   14.000   Reading frame      15 time   15.000   Reading frame      16 time   16.000   Reading frame      17 time   17.000   Reading frame      18 time   18.000   Reading frame      19 time   19.000   Reading frame      20 time   20.000    ->  frame     20 time   20.000      Reading frame      30 time   30.000    ->  frame     30 time   30.000      Reading frame      40 time   40.000    ->  frame     40 time   40.000      Reading frame      50 time   50.000    ->  frame     50 time   50.000      Reading frame      60 time   60.000    ->  frame     60 time   60.000      Reading frame      70 time   70.000    ->  frame     70 time   70.000      Reading frame      80 time   80.000    ->  frame     80 time   80.000      Reading frame      90 time   90.000    ->  frame     90 time   90.000      Reading frame     100 time  100.000    ->  frame    100 time  100.000      Reading frame     110 time  110.000    ->  frame    110 time  110.000      Reading frame     120 time  120.000    ->  frame    120 time  120.000      Reading frame     130 time  130.000    ->  frame    130 time  130.000      Reading frame     140 time  140.000    ->  frame    140 time  140.000      Reading frame     150 time  150.000    ->  frame    150 time  150.000      Reading frame     160 time  160.000    ->  frame    160 time  160.000      Reading frame     170 time  170.000    ->  frame    170 time  170.000      Reading frame     180 time  180.000    ->  frame    180 time  180.000      Reading frame     190 time  190.000    ->  frame    190 time  190.000      Reading frame     200 time  200.000    ->  frame    200 time  200.000       ->  frame    210 time  210.000       ->  frame    220 time  220.000       ->  frame    230 time  230.000       ->  frame    240 time  240.000       ->  frame    250 time  250.000       ->  frame    260 time  260.000       ->  frame    270 time  270.000       ->  frame    280 time  280.000       ->  frame    290 time  290.000      Reading frame     300 time  300.000    ->  frame    300 time  300.000       ->  frame    310 time  310.000       ->  frame    320 time  320.000       ->  frame    330 time  330.000       ->  frame    340 time  340.000       ->  frame    350 time  350.000       ->  frame    360 time  360.000       ->  frame    370 time  370.000       ->  frame    380 time  380.000       ->  frame    390 time  390.000      Reading frame     400 time  400.000    ->  frame    400 time  400.000       ->  frame    410 time  410.000       ->  frame    420 time  420.000       ->  frame    430 time  430.000       ->  frame    440 time  440.000       ->  frame    450 time  450.000       ->  frame    460 time  460.000       ->  frame    470 time  470.000       ->  frame    480 time  480.000       ->  frame    490 time  490.000      Reading frame     500 time  500.000    ->  frame    500 time  500.000       ->  frame    510 time  510.000       ->  frame    520 time  520.000       ->  frame    530 time  530.000       ->  frame    540 time  540.000       ->  frame    550 time  550.000       ->  frame    560 time  560.000       ->  frame    570 time  570.000       ->  frame    580 time  580.000       ->  frame    590 time  590.000      Reading frame     600 time  600.000    ->  frame    600 time  600.000       ->  frame    610 time  610.000       ->  frame    620 time  620.000       ->  frame    630 time  630.000       ->  frame    640 time  640.000       ->  frame    650 time  650.000       ->  frame    660 time  660.000       ->  frame    670 time  670.000       ->  frame    680 time  680.000       ->  frame    690 time  690.000      Reading frame     700 time  700.000    ->  frame    700 time  700.000       ->  frame    710 time  710.000       ->  frame    720 time  720.000       ->  frame    730 time  730.000       ->  frame    740 time  740.000       ->  frame    750 time  750.000       ->  frame    760 time  760.000       ->  frame    770 time  770.000       ->  frame    780 time  780.000       ->  frame    790 time  790.000      Reading frame     800 time  800.000    ->  frame    800 time  800.000       ->  frame    810 time  810.000       ->  frame    820 time  820.000       ->  frame    830 time  830.000       ->  frame    840 time  840.000       ->  frame    850 time  850.000       ->  frame    860 time  860.000       ->  frame    870 time  870.000       ->  frame    880 time  880.000       ->  frame    890 time  890.000      Reading frame     900 time  900.000    ->  frame    900 time  900.000       ->  frame    910 time  910.000       ->  frame    920 time  920.000       ->  frame    930 time  930.000       ->  frame    940 time  940.000       ->  frame    950 time  950.000       ->  frame    960 time  960.000       ->  frame    970 time  970.000       ->  frame    980 time  980.000       ->  frame    990 time  990.000      Reading frame    1000 time 1000.000    ->  frame   1000 time 1000.000       ->  frame   1010 time 1010.000       ->  frame   1020 time 1020.000       ->  frame   1030 time 1030.000       ->  frame   1040 time 1040.000       ->  frame   1050 time 1050.000       ->  frame   1060 time 1060.000       ->  frame   1070 time 1070.000       ->  frame   1080 time 1080.000       ->  frame   1090 time 1090.000      Reading frame    1100 time 1100.000    ->  frame   1100 time 1100.000       ->  frame   1110 time 1110.000       ->  frame   1120 time 1120.000       ->  frame   1130 time 1130.000       ->  frame   1140 time 1140.000       ->  frame   1150 time 1150.000       ->  frame   1160 time 1160.000       ->  frame   1170 time 1170.000       ->  frame   1180 time 1180.000       ->  frame   1190 time 1190.000      Reading frame    1200 time 1200.000    ->  frame   1200 time 1200.000       ->  frame   1210 time 1210.000       ->  frame   1220 time 1220.000       ->  frame   1230 time 1230.000       ->  frame   1240 time 1240.000       ->  frame   1250 time 1250.000       ->  frame   1260 time 1260.000       ->  frame   1270 time 1270.000       ->  frame   1280 time 1280.000       ->  frame   1290 time 1290.000      Reading frame    1300 time 1300.000    ->  frame   1300 time 1300.000       ->  frame   1310 time 1310.000       ->  frame   1320 time 1320.000       ->  frame   1330 time 1330.000       ->  frame   1340 time 1340.000       ->  frame   1350 time 1350.000       ->  frame   1360 time 1360.000       ->  frame   1370 time 1370.000       ->  frame   1380 time 1380.000       ->  frame   1390 time 1390.000      Reading frame    1400 time 1400.000    ->  frame   1400 time 1400.000       ->  frame   1410 time 1410.000       ->  frame   1420 time 1420.000       ->  frame   1430 time 1430.000       ->  frame   1440 time 1440.000       ->  frame   1450 time 1450.000       ->  frame   1460 time 1460.000       ->  frame   1470 time 1470.000       ->  frame   1480 time 1480.000       ->  frame   1490 time 1490.000      Reading frame    1500 time 1500.000    ->  frame   1500 time 1500.000       ->  frame   1510 time 1510.000       ->  frame   1520 time 1520.000       ->  frame   1530 time 1530.000       ->  frame   1540 time 1540.000       ->  frame   1550 time 1550.000       ->  frame   1560 time 1560.000       ->  frame   1570 time 1570.000       ->  frame   1580 time 1580.000       ->  frame   1590 time 1590.000      Reading frame    1600 time 1600.000    ->  frame   1600 time 1600.000       ->  frame   1610 time 1610.000       ->  frame   1620 time 1620.000       ->  frame   1630 time 1630.000       ->  frame   1640 time 1640.000       ->  frame   1650 time 1650.000       ->  frame   1660 time 1660.000       ->  frame   1670 time 1670.000       ->  frame   1680 time 1680.000       ->  frame   1690 time 1690.000      Reading frame    1700 time 1700.000    ->  frame   1700 time 1700.000       ->  frame   1710 time 1710.000       ->  frame   1720 time 1720.000       ->  frame   1730 time 1730.000       ->  frame   1740 time 1740.000       ->  frame   1750 time 1750.000       ->  frame   1760 time 1760.000       ->  frame   1770 time 1770.000       ->  frame   1780 time 1780.000       ->  frame   1790 time 1790.000      Reading frame    1800 time 1800.000    ->  frame   1800 time 1800.000       ->  frame   1810 time 1810.000       ->  frame   1820 time 1820.000       ->  frame   1830 time 1830.000       ->  frame   1840 time 1840.000       ->  frame   1850 time 1850.000       ->  frame   1860 time 1860.000       ->  frame   1870 time 1870.000       ->  frame   1880 time 1880.000       ->  frame   1890 time 1890.000      Reading frame    1900 time 1900.000    ->  frame   1900 time 1900.000       ->  frame   1910 time 1910.000       ->  frame   1920 time 1920.000       ->  frame   1930 time 1930.000       ->  frame   1940 time 1940.000       ->  frame   1950 time 1950.000       ->  frame   1960 time 1960.000       ->  frame   1970 time 1970.000       ->  frame   1980 time 1980.000       ->  frame   1990 time 1990.000      Reading frame    2000 time 2000.000    ->  frame   2000 time 2000.000       ->  frame   2010 time 2010.000       ->  frame   2020 time 2020.000       ->  frame   2030 time 2030.000       ->  frame   2040 time 2040.000       ->  frame   2050 time 2050.000       ->  frame   2060 time 2060.000       ->  frame   2070 time 2070.000       ->  frame   2080 time 2080.000       ->  frame   2090 time 2090.000       ->  frame   2100 time 2100.000       ->  frame   2110 time 2110.000       ->  frame   2120 time 2120.000       ->  frame   2130 time 2130.000       ->  frame   2140 time 2140.000       ->  frame   2150 time 2150.000       ->  frame   2160 time 2160.000       ->  frame   2170 time 2170.000       ->  frame   2180 time 2180.000       ->  frame   2190 time 2190.000       ->  frame   2200 time 2200.000       ->  frame   2210 time 2210.000       ->  frame   2220 time 2220.000       ->  frame   2230 time 2230.000       ->  frame   2240 time 2240.000       ->  frame   2250 time 2250.000       ->  frame   2260 time 2260.000       ->  frame   2270 time 2270.000       ->  frame   2280 time 2280.000       ->  frame   2290 time 2290.000       ->  frame   2300 time 2300.000       ->  frame   2310 time 2310.000       ->  frame   2320 time 2320.000       ->  frame   2330 time 2330.000       ->  frame   2340 time 2340.000       ->  frame   2350 time 2350.000       ->  frame   2360 time 2360.000       ->  frame   2370 time 2370.000       ->  frame   2380 time 2380.000       ->  frame   2390 time 2390.000       ->  frame   2400 time 2400.000       ->  frame   2410 time 2410.000       ->  frame   2420 time 2420.000       ->  frame   2430 time 2430.000       ->  frame   2440 time 2440.000       ->  frame   2450 time 2450.000       ->  frame   2460 time 2460.000       ->  frame   2470 time 2470.000       ->  frame   2480 time 2480.000       ->  frame   2490 time 2490.000       ->  frame   2500 time 2500.000       ->  frame   2510 time 2510.000       ->  frame   2520 time 2520.000       ->  frame   2530 time 2530.000       ->  frame   2540 time 2540.000       ->  frame   2550 time 2550.000       ->  frame   2560 time 2560.000       ->  frame   2570 time 2570.000       ->  frame   2580 time 2580.000       ->  frame   2590 time 2590.000       ->  frame   2600 time 2600.000       ->  frame   2610 time 2610.000       ->  frame   2620 time 2620.000       ->  frame   2630 time 2630.000       ->  frame   2640 time 2640.000       ->  frame   2650 time 2650.000       ->  frame   2660 time 2660.000       ->  frame   2670 time 2670.000       ->  frame   2680 time 2680.000       ->  frame   2690 time 2690.000       ->  frame   2700 time 2700.000       ->  frame   2710 time 2710.000       ->  frame   2720 time 2720.000       ->  frame   2730 time 2730.000       ->  frame   2740 time 2740.000       ->  frame   2750 time 2750.000       ->  frame   2760 time 2760.000       ->  frame   2770 time 2770.000       ->  frame   2780 time 2780.000       ->  frame   2790 time 2790.000       ->  frame   2800 time 2800.000       ->  frame   2810 time 2810.000       ->  frame   2820 time 2820.000       ->  frame   2830 time 2830.000       ->  frame   2840 time 2840.000       ->  frame   2850 time 2850.000       ->  frame   2860 time 2860.000       ->  frame   2870 time 2870.000       ->  frame   2880 time 2880.000       ->  frame   2890 time 2890.000       ->  frame   2900 time 2900.000       ->  frame   2910 time 2910.000       ->  frame   2920 time 2920.000       ->  frame   2930 time 2930.000       ->  frame   2940 time 2940.000       ->  frame   2950 time 2950.000       ->  frame   2960 time 2960.000       ->  frame   2970 time 2970.000       ->  frame   2980 time 2980.000       ->  frame   2990 time 2990.000      Reading frame    3000 time 3000.000    ->  frame   3000 time 3000.000       ->  frame   3010 time 3010.000       ->  frame   3020 time 3020.000       ->  frame   3030 time 3030.000       ->  frame   3040 time 3040.000       ->  frame   3050 time 3050.000       ->  frame   3060 time 3060.000       ->  frame   3070 time 3070.000       ->  frame   3080 time 3080.000       ->  frame   3090 time 3090.000       ->  frame   3100 time 3100.000       ->  frame   3110 time 3110.000       ->  frame   3120 time 3120.000       ->  frame   3130 time 3130.000       ->  frame   3140 time 3140.000       ->  frame   3150 time 3150.000       ->  frame   3160 time 3160.000       ->  frame   3170 time 3170.000       ->  frame   3180 time 3180.000       ->  frame   3190 time 3190.000       ->  frame   3200 time 3200.000       ->  frame   3210 time 3210.000       ->  frame   3220 time 3220.000       ->  frame   3230 time 3230.000       ->  frame   3240 time 3240.000       ->  frame   3250 time 3250.000       ->  frame   3260 time 3260.000       ->  frame   3270 time 3270.000       ->  frame   3280 time 3280.000       ->  frame   3290 time 3290.000       ->  frame   3300 time 3300.000       ->  frame   3310 time 3310.000       ->  frame   3320 time 3320.000       ->  frame   3330 time 3330.000       ->  frame   3340 time 3340.000       ->  frame   3350 time 3350.000       ->  frame   3360 time 3360.000       ->  frame   3370 time 3370.000       ->  frame   3380 time 3380.000       ->  frame   3390 time 3390.000       ->  frame   3400 time 3400.000       ->  frame   3410 time 3410.000       ->  frame   3420 time 3420.000       ->  frame   3430 time 3430.000       ->  frame   3440 time 3440.000       ->  frame   3450 time 3450.000       ->  frame   3460 time 3460.000       ->  frame   3470 time 3470.000       ->  frame   3480 time 3480.000       ->  frame   3490 time 3490.000       ->  frame   3500 time 3500.000       ->  frame   3510 time 3510.000       ->  frame   3520 time 3520.000       ->  frame   3530 time 3530.000       ->  frame   3540 time 3540.000       ->  frame   3550 time 3550.000       ->  frame   3560 time 3560.000       ->  frame   3570 time 3570.000       ->  frame   3580 time 3580.000       ->  frame   3590 time 3590.000       ->  frame   3600 time 3600.000       ->  frame   3610 time 3610.000       ->  frame   3620 time 3620.000       ->  frame   3630 time 3630.000       ->  frame   3640 time 3640.000       ->  frame   3650 time 3650.000       ->  frame   3660 time 3660.000       ->  frame   3670 time 3670.000       ->  frame   3680 time 3680.000       ->  frame   3690 time 3690.000       ->  frame   3700 time 3700.000       ->  frame   3710 time 3710.000       ->  frame   3720 time 3720.000       ->  frame   3730 time 3730.000       ->  frame   3740 time 3740.000       ->  frame   3750 time 3750.000       ->  frame   3760 time 3760.000       ->  frame   3770 time 3770.000       ->  frame   3780 time 3780.000       ->  frame   3790 time 3790.000       ->  frame   3800 time 3800.000       ->  frame   3810 time 3810.000       ->  frame   3820 time 3820.000       ->  frame   3830 time 3830.000       ->  frame   3840 time 3840.000       ->  frame   3850 time 3850.000       ->  frame   3860 time 3860.000       ->  frame   3870 time 3870.000       ->  frame   3880 time 3880.000       ->  frame   3890 time 3890.000       ->  frame   3900 time 3900.000       ->  frame   3910 time 3910.000       ->  frame   3920 time 3920.000       ->  frame   3930 time 3930.000       ->  frame   3940 time 3940.000       ->  frame   3950 time 3950.000       ->  frame   3960 time 3960.000       ->  frame   3970 time 3970.000       ->  frame   3980 time 3980.000       ->  frame   3990 time 3990.000      Reading frame    4000 time 4000.000    ->  frame   4000 time 4000.000       ->  frame   4010 time 4010.000       ->  frame   4020 time 4020.000       ->  frame   4030 time 4030.000       ->  frame   4040 time 4040.000       ->  frame   4050 time 4050.000       ->  frame   4060 time 4060.000       ->  frame   4070 time 4070.000       ->  frame   4080 time 4080.000       ->  frame   4090 time 4090.000       ->  frame   4100 time 4100.000       ->  frame   4110 time 4110.000       ->  frame   4120 time 4120.000       ->  frame   4130 time 4130.000       ->  frame   4140 time 4140.000       ->  frame   4150 time 4150.000       ->  frame   4160 time 4160.000       ->  frame   4170 time 4170.000       ->  frame   4180 time 4180.000       ->  frame   4190 time 4190.000       ->  frame   4200 time 4200.000       ->  frame   4210 time 4210.000       ->  frame   4220 time 4220.000       ->  frame   4230 time 4230.000       ->  frame   4240 time 4240.000       ->  frame   4250 time 4250.000       ->  frame   4260 time 4260.000       ->  frame   4270 time 4270.000       ->  frame   4280 time 4280.000       ->  frame   4290 time 4290.000       ->  frame   4300 time 4300.000       ->  frame   4310 time 4310.000       ->  frame   4320 time 4320.000       ->  frame   4330 time 4330.000       ->  frame   4340 time 4340.000       ->  frame   4350 time 4350.000       ->  frame   4360 time 4360.000       ->  frame   4370 time 4370.000       ->  frame   4380 time 4380.000       ->  frame   4390 time 4390.000       ->  frame   4400 time 4400.000       ->  frame   4410 time 4410.000       ->  frame   4420 time 4420.000       ->  frame   4430 time 4430.000       ->  frame   4440 time 4440.000       ->  frame   4450 time 4450.000       ->  frame   4460 time 4460.000       ->  frame   4470 time 4470.000       ->  frame   4480 time 4480.000       ->  frame   4490 time 4490.000       ->  frame   4500 time 4500.000       ->  frame   4510 time 4510.000       ->  frame   4520 time 4520.000       ->  frame   4530 time 4530.000       ->  frame   4540 time 4540.000       ->  frame   4550 time 4550.000       ->  frame   4560 time 4560.000       ->  frame   4570 time 4570.000       ->  frame   4580 time 4580.000       ->  frame   4590 time 4590.000       ->  frame   4600 time 4600.000       ->  frame   4610 time 4610.000       ->  frame   4620 time 4620.000       ->  frame   4630 time 4630.000       ->  frame   4640 time 4640.000       ->  frame   4650 time 4650.000       ->  frame   4660 time 4660.000       ->  frame   4670 time 4670.000       ->  frame   4680 time 4680.000       ->  frame   4690 time 4690.000       ->  frame   4700 time 4700.000       ->  frame   4710 time 4710.000       ->  frame   4720 time 4720.000       ->  frame   4730 time 4730.000       ->  frame   4740 time 4740.000       ->  frame   4750 time 4750.000       ->  frame   4760 time 4760.000       ->  frame   4770 time 4770.000       ->  frame   4780 time 4780.000       ->  frame   4790 time 4790.000       ->  frame   4800 time 4800.000       ->  frame   4810 time 4810.000       ->  frame   4820 time 4820.000       ->  frame   4830 time 4830.000       ->  frame   4840 time 4840.000       ->  frame   4850 time 4850.000       ->  frame   4860 time 4860.000       ->  frame   4870 time 4870.000       ->  frame   4880 time 4880.000       ->  frame   4890 time 4890.000       ->  frame   4900 time 4900.000       ->  frame   4910 time 4910.000       ->  frame   4920 time 4920.000       ->  frame   4930 time 4930.000       ->  frame   4940 time 4940.000       ->  frame   4950 time 4950.000       ->  frame   4960 time 4960.000       ->  frame   4970 time 4970.000       ->  frame   4980 time 4980.000       ->  frame   4990 time 4990.000      Reading frame    5000 time 5000.000    ->  frame   5000 time 5000.000      Last frame       5000 time 5000.000   
+
+
+gcq#544: "It is now quite lawful for a Catholic woman to avoid pregnancy by a resort to mathematics, though she is still forbidden to resort to physics and chemistry." (Henry Louis Mencken)
+
+Select group for centering
+Selected 2: 'LIG'
+Select group for output
+Selected 0: 'System'
+libibverbs: Warning: couldn't open config directory '/etc/libibverbs.d'.
+libibverbs: Warning: no userspace device-specific driver found for /sys/class/infiniband_verbs/uverbs0
+--------------------------------------------------------------------------
+[[4551,1],0]: A high-performance Open MPI point-to-point messaging module
+was unable to find any relevant network interfaces:
+
+Module: OpenFabrics (openib)
+  Host: eu-ms-003-05
+
+Another transport will be used instead, although this may result in
+lower performance.
+--------------------------------------------------------------------------
+                  :-) GROMACS - gmx grompp, VERSION 5.1.4 (-:
+
+                            GROMACS is written by:
+     Emile Apol      Rossen Apostolov  Herman J.C. Berendsen    Par Bjelkmar   
+ Aldert van Buuren   Rudi van Drunen     Anton Feenstra   Sebastian Fritsch 
+  Gerrit Groenhof   Christoph Junghans   Anca Hamuraru    Vincent Hindriksen
+ Dimitrios Karkoulis    Peter Kasson        Jiri Kraus      Carsten Kutzner  
+    Per Larsson      Justin A. Lemkul   Magnus Lundborg   Pieter Meulenhoff 
+   Erik Marklund      Teemu Murtola       Szilard Pall       Sander Pronk   
+   Roland Schulz     Alexey Shvetsov     Michael Shirts     Alfons Sijbers  
+   Peter Tieleman    Teemu Virolainen  Christian Wennberg    Maarten Wolf   
+                           and the project leaders:
+        Mark Abraham, Berk Hess, Erik Lindahl, and David van der Spoel
+
+Copyright (c) 1991-2000, University of Groningen, The Netherlands.
+Copyright (c) 2001-2015, The GROMACS development team at
+Uppsala University, Stockholm University and
+the Royal Institute of Technology, Sweden.
+check out http://www.gromacs.org for more information.
+
+GROMACS is free software; you can redistribute it and/or modify it
+under the terms of the GNU Lesser General Public License
+as published by the Free Software Foundation; either version 2.1
+of the License, or (at your option) any later version.
+
+GROMACS:      gmx grompp, VERSION 5.1.4
+Executable:   /cluster/work/igc/carmenes/Softwares/gromacs/bin/gmx_mpi
+Data prefix:  /cluster/work/igc/carmenes/Softwares/gromacs
+Command line:
+  gmx_mpi grompp -f nvt_rf_wat_3b.mdp -c nvt3_CHEMBL2010836_pH7_netcharge.gro -p CHEMBL2010836_pH7_netcharge.top -n index_CHEMBL2010836_pH7_netcharge.ndx -o nvt3_rf_CHEMBL2010836_pH7_netcharge.tpr
+
+Ignoring obsolete mdp entry 'title'
+
+NOTE 1 [file nvt_rf_wat_3b.mdp]:
+  The group cutoff scheme is deprecated since GROMACS 5.0 and will be
+  removed in a future release when all interaction forms are supported for
+  the verlet scheme. The verlet scheme already scales better, and it is
+  compatible with GPUs and other accelerators.
+
+Setting the LD random seed to 1524875854
+Generated 210 of the 210 non-bonded parameter combinations
+Generating 1-4 interactions: fudge = 0.5
+Generated 210 of the 210 1-4 parameter combinations
+Excluding 3 bonded neighbours molecule type 'LIG'
+Excluding 3 bonded neighbours molecule type 'Cl-'
+Excluding 3 bonded neighbours molecule type 'WAT'
+Number of degrees of freedom in T-Coupling group LIG is 114.98
+Number of degrees of freedom in T-Coupling group Water_and_ions is 14616.02
+
+There was 1 note
+
+gcq#103: "Take Your Medications and Preparations and Ram It Up Your Snout" (F. Zappa)
+
+turning all bonds into constraints...
+turning all bonds into constraints...
+turning all bonds into constraints...
+This run will generate roughly 13 Mb of data
+libibverbs: Warning: couldn't open config directory '/etc/libibverbs.d'.
+libibverbs: Warning: no userspace device-specific driver found for /sys/class/infiniband_verbs/uverbs0
+--------------------------------------------------------------------------
+[[4546,1],0]: A high-performance Open MPI point-to-point messaging module
+was unable to find any relevant network interfaces:
+
+Module: OpenFabrics (openib)
+  Host: eu-ms-003-05
+
+Another transport will be used instead, although this may result in
+lower performance.
+--------------------------------------------------------------------------
+                   :-) GROMACS - gmx mdrun, VERSION 5.1.4 (-:
+
+                            GROMACS is written by:
+     Emile Apol      Rossen Apostolov  Herman J.C. Berendsen    Par Bjelkmar   
+ Aldert van Buuren   Rudi van Drunen     Anton Feenstra   Sebastian Fritsch 
+  Gerrit Groenhof   Christoph Junghans   Anca Hamuraru    Vincent Hindriksen
+ Dimitrios Karkoulis    Peter Kasson        Jiri Kraus      Carsten Kutzner  
+    Per Larsson      Justin A. Lemkul   Magnus Lundborg   Pieter Meulenhoff 
+   Erik Marklund      Teemu Murtola       Szilard Pall       Sander Pronk   
+   Roland Schulz     Alexey Shvetsov     Michael Shirts     Alfons Sijbers  
+   Peter Tieleman    Teemu Virolainen  Christian Wennberg    Maarten Wolf   
+                           and the project leaders:
+        Mark Abraham, Berk Hess, Erik Lindahl, and David van der Spoel
+
+Copyright (c) 1991-2000, University of Groningen, The Netherlands.
+Copyright (c) 2001-2015, The GROMACS development team at
+Uppsala University, Stockholm University and
+the Royal Institute of Technology, Sweden.
+check out http://www.gromacs.org for more information.
+
+GROMACS is free software; you can redistribute it and/or modify it
+under the terms of the GNU Lesser General Public License
+as published by the Free Software Foundation; either version 2.1
+of the License, or (at your option) any later version.
+
+GROMACS:      gmx mdrun, VERSION 5.1.4
+Executable:   /cluster/work/igc/carmenes/Softwares/gromacs/bin/gmx_mpi
+Data prefix:  /cluster/work/igc/carmenes/Softwares/gromacs
+Command line:
+  gmx_mpi mdrun -s nvt3_rf_CHEMBL2010836_pH7_netcharge.tpr -rerun center_CHEMBL2010836_pH7_netcharge.top -e nvt3_rf_CHEMBL2010836_pH7_netcharge.edr
+
+
+-------------------------------------------------------
+Program:     gmx mdrun, VERSION 5.1.4
+Source file: src/gromacs/commandline/cmdlineparser.cpp (line 234)
+Function:    void gmx::CommandLineParser::parse(int*, char**)
+
+Error in user input:
+Invalid command-line options
+  In command-line option -rerun
+    File name 'center_CHEMBL2010836_pH7_netcharge.top' cannot be used for this
+    option.
+    Only the following extensions are possible:
+      .xtc, .trr, .cpt, .gro, .g96, .pdb, .tng
+
+For more information and tips for troubleshooting, please check the GROMACS
+website at http://www.gromacs.org/Documentation/Errors
+-------------------------------------------------------
+Halting program gmx mdrun
+--------------------------------------------------------------------------
+MPI_ABORT was invoked on rank 0 in communicator MPI_COMM_WORLD 
+with errorcode 1.
+
+NOTE: invoking MPI_ABORT causes Open MPI to kill all MPI processes.
+You may or may not see output from other processes, depending on
+exactly when Open MPI kills them.
+--------------------------------------------------------------------------
+libibverbs: Warning: couldn't open config directory '/etc/libibverbs.d'.
+libibverbs: Warning: no userspace device-specific driver found for /sys/class/infiniband_verbs/uverbs0
+--------------------------------------------------------------------------
+[[4557,1],0]: A high-performance Open MPI point-to-point messaging module
+was unable to find any relevant network interfaces:
+
+Module: OpenFabrics (openib)
+  Host: eu-ms-003-05
+
+Another transport will be used instead, although this may result in
+lower performance.
+--------------------------------------------------------------------------
+                  :-) GROMACS - gmx energy, VERSION 5.1.4 (-:
+
+                            GROMACS is written by:
+     Emile Apol      Rossen Apostolov  Herman J.C. Berendsen    Par Bjelkmar   
+ Aldert van Buuren   Rudi van Drunen     Anton Feenstra   Sebastian Fritsch 
+  Gerrit Groenhof   Christoph Junghans   Anca Hamuraru    Vincent Hindriksen
+ Dimitrios Karkoulis    Peter Kasson        Jiri Kraus      Carsten Kutzner  
+    Per Larsson      Justin A. Lemkul   Magnus Lundborg   Pieter Meulenhoff 
+   Erik Marklund      Teemu Murtola       Szilard Pall       Sander Pronk   
+   Roland Schulz     Alexey Shvetsov     Michael Shirts     Alfons Sijbers  
+   Peter Tieleman    Teemu Virolainen  Christian Wennberg    Maarten Wolf   
+                           and the project leaders:
+        Mark Abraham, Berk Hess, Erik Lindahl, and David van der Spoel
+
+Copyright (c) 1991-2000, University of Groningen, The Netherlands.
+Copyright (c) 2001-2015, The GROMACS development team at
+Uppsala University, Stockholm University and
+the Royal Institute of Technology, Sweden.
+check out http://www.gromacs.org for more information.
+
+GROMACS is free software; you can redistribute it and/or modify it
+under the terms of the GNU Lesser General Public License
+as published by the Free Software Foundation; either version 2.1
+of the License, or (at your option) any later version.
+
+GROMACS:      gmx energy, VERSION 5.1.4
+Executable:   /cluster/work/igc/carmenes/Softwares/gromacs/bin/gmx_mpi
+Data prefix:  /cluster/work/igc/carmenes/Softwares/gromacs
+Command line:
+  gmx_mpi energy -f nvt3_rf_CHEMBL2010836_pH7_netcharge.edr -o nvt3_rf_CHEMBL2010836_pH7_netcharge.xvg
+
+
+-------------------------------------------------------
+Program:     gmx energy, VERSION 5.1.4
+Source file: src/gromacs/commandline/cmdlineparser.cpp (line 234)
+Function:    void gmx::CommandLineParser::parse(int*, char**)
+
+Error in user input:
+Invalid command-line options
+  In command-line option -f
+    File 'nvt3_rf_CHEMBL2010836_pH7_netcharge.edr' does not exist or is not
+    accessible.
+
+For more information and tips for troubleshooting, please check the GROMACS
+website at http://www.gromacs.org/Documentation/Errors
+-------------------------------------------------------
+Halting program gmx energy
+--------------------------------------------------------------------------
+MPI_ABORT was invoked on rank 0 in communicator MPI_COMM_WORLD 
+with errorcode 1.
+
+NOTE: invoking MPI_ABORT causes Open MPI to kill all MPI processes.
+You may or may not see output from other processes, depending on
+exactly when Open MPI kills them.
+--------------------------------------------------------------------------
+rm: cannot remove ‘#*’: No such file or directory

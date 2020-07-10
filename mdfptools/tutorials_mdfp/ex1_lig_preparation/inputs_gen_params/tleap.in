@@ -1,0 +1,12 @@
+source leaprc.ff99SB
+source leaprc.gaff
+LIG = loadmol2 test.mol2 
+check LIG 
+loadamberparams test.frcmod
+saveoff LIG test.lib 
+source leaprc.water.tip3p
+solvatebox LIG TIP3PBOX 10 iso  # iso for cubic box
+addIons2 LIG Na+ 0
+addIons2 LIG Cl- 0
+saveamberparm LIG ./WAT_box/test.prmtop ./WAT_box/test.inpcrd
+quit
