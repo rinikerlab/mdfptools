@@ -13,7 +13,9 @@ class BaseExtractor():
     """
 
     .. warning :: The base class should not be used directly
+
     """
+    #FIXME make epsilon variable 
     string_identifier = "!Should_Call_From_Inherited_Class"
 
     @classmethod

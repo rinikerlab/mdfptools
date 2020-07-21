@@ -14,6 +14,9 @@ class MDFP():
     .. todo::
         - method to give back the keys
         - store some metdadata?
+        - Option to create a empty MDFP
+        - load in experimental field
+        - serialisation
     """
     def __init__(self, mdfp_dict):
         """
