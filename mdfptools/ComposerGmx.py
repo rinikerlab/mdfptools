@@ -734,7 +734,7 @@ class ComposerGMX:
                 
         
     @classmethod
-    def calc_psa3d(self, obj_list=None, include_SandP: bool = True, atom_to_remove = None):
+    def calc_psa3d(self, obj_list=None, include_SandP: bool = True, atom_to_remove = None, solute_resname = 'LIG'):
         """
         Help function to calculate the 3d polar surface area (3D-PSA) of molecules in Interface_Pymol for all the snapshots in a MD trajectory.
         (Contribution by Benjamin Schroeder)
@@ -748,7 +748,9 @@ class ComposerGMX:
         atom_to_remove: str, optional
             Single atom name of the atom to remove from the selection (Default = None). 
             Useful if you want to include only S or only P in the calculation of the 3D-PSA.
- 
+        solute_resname: str, optional
+            Residue name of the solute molecule. The 3D-PSA will be calculated only for this solute molecule (Default = 'LIG')
+
         Returns
         ---------- 
         obj_psa_dict: list
@@ -758,37 +760,38 @@ class ComposerGMX:
         # IO
         if (obj_list is None):
             obj_list = cmd.get_names("objects")
-        # Loop over objects
-        obj_psa_dict = {}
-        for obj in obj_list:
-            cmd.frame(0)
-            states = range(1, cmd.count_states(obj) + 1)  # get all states of the object
-            ##Loop over all states
-            psa = []
-            for state in states:
-                ###select all needed atoms by partialCSelection or element or H next to (O ,N)
-                if atom_to_remove != None and isinstance(atom_to_remove, str):
-                    if include_SandP:
-                        select_string = "resn LIG and (elem N or elem O or elem S or elem P or (elem H and (neighbor elem N+O+S+P))) and " + obj + " and not name {}".format(atom_to_remove)  #@carmen add: "or elem S"
-                    else:
-                        select_string = "resn LIG and (elem N or elem O or (elem H and (neighbor elem N+O))) and " + obj  + " and not name {}".format(atom_to_remove)  #@carmen add: "or elem S"
+        if len(obj_list) > 1:
+            print("Warning: More than one object available. The 3D-PSA will be returned only for the first object {}".format(obj_list[0]))
+        # Select first (and only) object, which contains the trajectory for the solute molecule
+        obj = obj_list[0]
+        cmd.frame(0)
+        states = range(1, cmd.count_states(obj) + 1)  # get all states of the object
+        ##Loop over all states
+        psa = []
+        for state in states:
+            ###select all needed atoms by partialCSelection or element or H next to (O ,N)
+            if atom_to_remove != None and isinstance(atom_to_remove, str):
+                if include_SandP:
+                    select_string = "resn {} and (elem N or elem O or elem S or elem P or (elem H and (neighbor elem N+O+S+P))) and ".format(solute_resname) + obj + " and not name {}".format(atom_to_remove)  #@carmen add: "or elem S"
                 else:
-                    if include_SandP:
-                        select_string = "resn LIG and (elem N or elem O or elem S or elem P or (elem H and (neighbor elem N+O+S+P))) and " + obj   #@carmen add: "or elem S"
-                    else:
-                        select_string = "resn LIG and (elem N or elem O or (elem H and (neighbor elem N+O))) and " + obj  #@carmen add: "or elem S"
-                cmd.select("noh", select_string)
-                ###calc surface area
-                psa.append(float(cmd.get_area("noh", state=state)))
-                ###gather data
-                #obj_psa_dict.update({obj: psa})
+                    select_string = "resn {} and (elem N or elem O or (elem H and (neighbor elem N+O))) and ".format(solute_resname) + obj  + " and not name {}".format(atom_to_remove)  #@carmen add: "or elem S"
+            else:
+                if include_SandP:
+                    select_string = "resn {} and (elem N or elem O or elem S or elem P or (elem H and (neighbor elem N+O+S+P))) and ".format(solute_resname) + obj   #@carmen add: "or elem S"
+                else:
+                    select_string = "resn {} and (elem N or elem O or (elem H and (neighbor elem N+O))) and ".format(solute_resname) + obj  #@carmen add: "or elem S"
+            cmd.select("noh", select_string)
+            ###calc surface area
+            psa.append(float(cmd.get_area("noh", state=state)))
+            
+        ### calculate mean, standard deviation, and median 
         obj_psa_dict = [np.mean(psa)/100, np.std(psa)/100, np.median(psa)/100]  #/100 to have nm instead of Angstrom
 
         return obj_psa_dict
 
 
     @classmethod
-    def extract_psa3d(self, traj_file, gro_file, obj_list=None, include_SandP = None, cmpd_name = None):
+    def extract_psa3d(self, traj_file, gro_file, obj_list=None, include_SandP = None, cmpd_name = None, atom_to_remove = None, solute_resname = 'LIG'):
         """ 
         Calculates the 3d polar surface area (3D-PSA) of molecules in Interface_Pymol for all the snapshots in a MD trajectory.
         (Contribution by Benjamin Schroeder)
@@ -806,6 +809,8 @@ class ComposerGMX:
         atom_to_remove: str, optional
             Single atom name of the atom to remove from the selection (Default = None). 
             Useful if you want to include only S or only P in the calculation of the 3D-PSA.
+        solute_resname: str, optional
+            Residue name of the solute molecule. The 3D-PSA will be calculated only for this solute molecule (Default = 'LIG')
 
         Returns
         ----------
@@ -825,10 +830,11 @@ class ComposerGMX:
         cmd.remove("solvent")
         cmd.remove("resn Cl-")
         cmd.remove("resn Na+")
-
+        cmd.remove("resn K+")
+        
         atom_names = []
         cmd.iterate_state(-1, selection=obj1 + " and not elem H", expression="atom_names.append(name)", space=locals())
-        total_psa = self.calc_psa3d(include_SandP = include_SandP)
+        total_psa = self.calc_psa3d(include_SandP = include_SandP, solute_resname = solute_resname, atom_to_remove = atom_to_remove)
 
         dict_psa3d = {'3d_psa_av': total_psa[0], '3d_psa_sd': total_psa[1], '3d_psa_med': total_psa[2]} 
 
