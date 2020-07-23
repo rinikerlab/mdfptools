@@ -731,10 +731,33 @@ class ComposerGMX:
 
         return(dict_ene)
         
-                
         
+    @classmethod                
+    def select_atoms_by_partial_charge(self, parmed_obj, ChargeCutoff = 0.3, solute_resname = "LIG"):
+        """ Select atoms based on the partial charges (help function for extract_psa3d).
+        A mol2 file of the solute molecule containing partial charges should be given as input.
+        Atoms with a partial charge higher than the ChargeCutoff (Default = 0.3) are selected and returned as output.
+
+        Parameters
+        ----------
+        parmed_obj: parmed.structure
+            Parmed object of the fully parameterised simulated system.
+        ChargeCutoff: float, optional
+            Charge cutoff for the selection of the atoms. Atoms with a partial charge > |ChargeCutoff| are selected.
+        solute_resname: str, optional
+            Residue name of the solute molecule. The 3D-PSA will be calculated only for this solute molecule (Default = 'LIG')
+        Returns
+        ----------
+        partialCSelection, str
+            Pymol string selection. This can be provided as input to the extract_psa3d function.
+        """        
+        sel = [at.name for at in parmed_obj.atoms if (at.residue.name == solute_resname and abs(at.charge) > ChargeCutoff)]
+        partialCSelection = 'name ' + '+'.join(sel)
+        return(partialCSelection)
+
+    
     @classmethod
-    def calc_psa3d(self, obj_list=None, include_SandP: bool = True, atom_to_remove = None, solute_resname = 'LIG'):
+    def calc_psa3d(self, obj_list=None, include_SandP: bool = True, atom_to_remove = None, solute_resname = 'LIG', customed_selection = None):
         """
         Help function to calculate the 3d polar surface area (3D-PSA) of molecules in Interface_Pymol for all the snapshots in a MD trajectory.
         (Contribution by Benjamin Schroeder)
@@ -750,7 +773,10 @@ class ComposerGMX:
             Useful if you want to include only S or only P in the calculation of the 3D-PSA.
         solute_resname: str, optional
             Residue name of the solute molecule. The 3D-PSA will be calculated only for this solute molecule (Default = 'LIG')
-
+        customed_selection: str, optional
+            Customed atom selection (in pymol selection language).
+            For example, if you want to select atoms based on their partial charges instead of the atom types, use the ComposerGMX.select_atoms_by_partial_charge function. This produces the customed_selection for you.
+            The atom_to_remove argument is not used if a customed_selection is provided.
         Returns
         ---------- 
         obj_psa_dict: list
@@ -769,17 +795,24 @@ class ComposerGMX:
         ##Loop over all states
         psa = []
         for state in states:
-            ###select all needed atoms by partialCSelection or element or H next to (O ,N)
-            if atom_to_remove != None and isinstance(atom_to_remove, str):
-                if include_SandP:
-                    select_string = "resn {} and (elem N or elem O or elem S or elem P or (elem H and (neighbor elem N+O+S+P))) and ".format(solute_resname) + obj + " and not name {}".format(atom_to_remove)  #@carmen add: "or elem S"
+            ###Generate pymol selection string. Select the atoms based on the atom types (O,N, polar H and optionally S and P) or provide a customed_selection
+            if customed_selection != None:
+                if len(customed_selection) != 0:
+                    select_string = customed_selection + " and " + obj
                 else:
-                    select_string = "resn {} and (elem N or elem O or (elem H and (neighbor elem N+O))) and ".format(solute_resname) + obj  + " and not name {}".format(atom_to_remove)  #@carmen add: "or elem S"
+                    print("Error: The customed_selection is empty. Provide a valid customed_selection.")
+                    return
             else:
-                if include_SandP:
-                    select_string = "resn {} and (elem N or elem O or elem S or elem P or (elem H and (neighbor elem N+O+S+P))) and ".format(solute_resname) + obj   #@carmen add: "or elem S"
+                if atom_to_remove != None and isinstance(atom_to_remove, str):
+                    if include_SandP:
+                        select_string = "resn {} and (elem N or elem O or elem S or elem P or (elem H and (neighbor elem N+O+S+P))) and ".format(solute_resname) + obj + " and not name {}".format(atom_to_remove)  #@carmen add: "or elem S"
+                    else:
+                        select_string = "resn {} and (elem N or elem O or (elem H and (neighbor elem N+O))) and ".format(solute_resname) + obj  + " and not name {}".format(atom_to_remove)  #@carmen add: "or elem S"
                 else:
-                    select_string = "resn {} and (elem N or elem O or (elem H and (neighbor elem N+O))) and ".format(solute_resname) + obj  #@carmen add: "or elem S"
+                    if include_SandP:
+                        select_string = "resn {} and (elem N or elem O or elem S or elem P or (elem H and (neighbor elem N+O+S+P))) and ".format(solute_resname) + obj   #@carmen add: "or elem S"
+                    else:
+                        select_string = "resn {} and (elem N or elem O or (elem H and (neighbor elem N+O))) and ".format(solute_resname) + obj  #@carmen add: "or elem S"
             cmd.select("noh", select_string)
             ###calc surface area
             psa.append(float(cmd.get_area("noh", state=state)))
@@ -791,7 +824,7 @@ class ComposerGMX:
 
 
     @classmethod
-    def extract_psa3d(self, traj_file, gro_file, obj_list=None, include_SandP = None, cmpd_name = None, atom_to_remove = None, solute_resname = 'LIG'):
+    def extract_psa3d(self, traj_file, gro_file, obj_list=None, include_SandP = None, cmpd_name = None, atom_to_remove = None, solute_resname = 'LIG', customed_selection = None):
         """ 
         Calculates the 3d polar surface area (3D-PSA) of molecules in Interface_Pymol for all the snapshots in a MD trajectory.
         (Contribution by Benjamin Schroeder)
@@ -811,7 +844,10 @@ class ComposerGMX:
             Useful if you want to include only S or only P in the calculation of the 3D-PSA.
         solute_resname: str, optional
             Residue name of the solute molecule. The 3D-PSA will be calculated only for this solute molecule (Default = 'LIG')
-
+        customed_selection: str, optional
+            Customed atom selection (in pymol selection language).
+            For example, if you want to select atoms based on their partial charges instead of the atom types, use the ComposerGMX.select_atoms_by_partial_charge function. This produces the customed_selection for you.
+            The atom_to_remove argument is not used if a customed_selection is provided.
         Returns
         ----------
         dict_psa3d: dict
@@ -834,7 +870,7 @@ class ComposerGMX:
         
         atom_names = []
         cmd.iterate_state(-1, selection=obj1 + " and not elem H", expression="atom_names.append(name)", space=locals())
-        total_psa = self.calc_psa3d(include_SandP = include_SandP, solute_resname = solute_resname, atom_to_remove = atom_to_remove)
+        total_psa = self.calc_psa3d(include_SandP = include_SandP, solute_resname = solute_resname, atom_to_remove = atom_to_remove, customed_selection = customed_selection)
 
         dict_psa3d = {'3d_psa_av': total_psa[0], '3d_psa_sd': total_psa[1], '3d_psa_med': total_psa[2]} 
 
