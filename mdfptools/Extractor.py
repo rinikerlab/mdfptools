@@ -8,6 +8,18 @@ import parmed
 from math import sqrt
 import mdtraj as md
 import numpy as np
+import tempfile
+
+"""
+TODOs:
+    - update _solute_solvent_split for all the other instances
+    - energy file parsing
+    - tqdm with extraction? nah too many levels of progress tracking
+    - 3d psa calculation function polishing
+    - rgyr, dipole, sasa make sure only include the solute
+    - custom property extractor
+"""
+
 
 class BaseExtractor():
     """
@@ -19,7 +31,7 @@ class BaseExtractor():
     string_identifier = "!Should_Call_From_Inherited_Class"
 
     @classmethod
-    def _solute_solvent_split(cls, topology):
+    def _solute_solvent_split(cls, topology, **kwargs):
         """
         Abstract method
         """
@@ -56,8 +68,9 @@ class BaseExtractor():
             for i in system.getForces():
                 i.setForceGroup(0)
 
-            topology = parm.topology
-            solute_atoms, solvent_atoms = cls._solute_solvent_split(topology)
+            # topology = parm.topology #XXX here I made the change
+            topology = mdtraj_obj.topology
+            solute_atoms, solvent_atoms = cls._solute_solvent_split(topology, **kwargs)
             solute_1_4_pairs, solvent_1_4_pairs, solute_excluded_pairs, solvent_excluded_pairs, solute_self_pairs, solvent_self_pairs = cls._get_all_exception_atom_pairs(system, topology)
 
 
@@ -137,7 +150,7 @@ class BaseExtractor():
                 new_force.addParticle([sigma, epsilon])
 
 
-            new_force.createExclusionsFromBonds([(i[0].index, i[1].index) for i in topology.bonds()], 3)
+            new_force.createExclusionsFromBonds([(i[0].index, i[1].index) for i in parm.topology.bonds()], 3)
             new_force.addInteractionGroup(solute_atoms, solute_atoms)
 
             update_grouping("intra_lj", new_force)
@@ -159,7 +172,7 @@ class BaseExtractor():
                 new_force.addParticle([sigma, epsilon])
 
 
-            new_force.createExclusionsFromBonds([(i[0].index, i[1].index) for i in topology.bonds()], 3)
+            new_force.createExclusionsFromBonds([(i[0].index, i[1].index) for i in parm.topology.bonds()], 3)
             new_force.addInteractionGroup(solute_atoms, solvent_atoms)
 
             update_grouping("inter_lj", new_force)
@@ -181,7 +194,7 @@ class BaseExtractor():
                 new_force.addParticle([sigma, epsilon])
 
 
-            new_force.createExclusionsFromBonds([(i[0].index, i[1].index) for i in topology.bonds()], 3)
+            new_force.createExclusionsFromBonds([(i[0].index, i[1].index) for i in parm.topology.bonds()], 3)
             new_force.addInteractionGroup(solvent_atoms, solvent_atoms)
 
             update_grouping("solvent_lj", new_force)
@@ -460,6 +473,8 @@ class BaseExtractor():
             df["{}_intra_lj".format(cls.string_identifier)] = []
             df["{}_total_crf".format(cls.string_identifier)] = []
             df["{}_total_lj".format(cls.string_identifier)] = []
+            
+            #TODO can speed up the for loop?????
             for i in range(len(mdtraj_obj)):
                 context.setPositions(mdtraj_obj.openmm_positions(i))
 
@@ -469,13 +484,106 @@ class BaseExtractor():
                 df["{}_total_lj".format(cls.string_identifier)].append(context.getState(getEnergy=True, groups=set(cls.group_name2num["intra_lj"] + cls.group_name2num["inter_lj"])).getPotentialEnergy()._value)
 
 
+            #TODO can speed up the for loop?????
             df["{}_intra_ene".format(cls.string_identifier)] = [sum(x) for x in zip(df["{}_intra_crf".format(cls.string_identifier)], df["{}_intra_lj".format(cls.string_identifier)])]
 
+            #TODO can speed up the for loop?????
             df["{}_total_ene".format(cls.string_identifier)] = [sum(x) for x in zip(df["{}_total_crf".format(cls.string_identifier)], df["{}_total_lj".format(cls.string_identifier)])]
 
             del context, integrator
             return df
 
+    @classmethod
+    def _read_xvg(cls, energy_file_xvg, **kwargs):
+        """
+        It reads the GROMACS xvg file into a pandas dataframe.
+        (Help function for EnergyTermsGmx).
+
+        Parameters:
+        ----------
+        energy_file_xvg: str
+            Name of the xvg file to read in
+
+        Returns
+        ----------
+        energy_df: df
+            Pandas dataframe of the energy terms and simulation parameters contained in the xvg file
+        """
+        import pandas as pd
+        try:
+            data = pd.read_csv(energy_file_xvg, sep="\t", header = None)
+            searchfor = ['#', '@']
+            N_lines_header = data[0][data[0].str.contains('|'.join(searchfor))].shape[0]
+            energy_df = pd.read_csv(energy_file_xvg, header = None, skiprows = N_lines_header, delim_whitespace=True)
+            N_col = energy_df.shape[1]
+            colnames = ["time"]
+            for i in range(N_col-1):
+                colnames.append(str.split(str(data[data[0].str.contains('s{} '.format(i))]), " ")[-1].replace('"',''))
+            energy_df.columns = colnames
+            return energy_df
+
+        except FileNotFoundError:
+            raise FileNotFoundError("Energy file {} does not exist".format(energy_file_xvg))
+
+
+
+    @classmethod
+    def extract_energies_from_xvg(cls, energy_file_xvg, cmpd_name = None, **kwargs):
+        """
+        Energy Terms are extracted from the Gromacs xvg files. 
+        It returns Energy Terms (as described in the original publication).
+        Espacially, it returns a dictionary that contains as keys the mean, standard deviation and median of the energy terms.
+        If cmpd_name is specified, it is returned in the dictionary.
+    
+        Parameters:
+        --------------------
+        energy_file_xvg: file
+            Gromacs xvg file containing energy terms
+        cmpd_name: str, optional
+            Name of the compound. If specified, it is returned in the output dictionary.
+        
+        Returns
+        ----------
+        dict_ene: dict
+            Keys are mean, standard deviation, and median of the energy terms. 
+            If cmpd_name is specified, it is returned in the dictionary.
+        """
+
+        energy_df = cls._read_xvg(energy_file_xvg)
+
+        energy_array = np.array(energy_df)
+
+        #FIXME can speed up
+        idx_coul_sr_lig = [i for i, s in enumerate(energy_df) if 'Coul-SR:LIG' in s][0] #5
+        idx_coul_14_lig = [i for i, s in enumerate(energy_df) if 'Coul-14:LIG' in s][0] #7
+        idx_lj_sr_lig = [i for i, s in enumerate(energy_df) if 'LJ-SR:LIG' in s][0] #6
+        idx_lj_14_lig = [i for i, s in enumerate(energy_df) if 'LJ-14:LIG' in s][0] #8
+        idx_coul_sr_wat_lig = [i for i, s in enumerate(energy_df) if 'Coul-SR:Water' in s][0] #1
+        idx_coul_14_wat_lig = [i for i, s in enumerate(energy_df) if 'Coul-14:Water' in s][0] #3
+        idx_lj_sr_wat_lig = [i for i, s in enumerate(energy_df) if 'LJ-SR:Water' in s][0] #2
+        idx_lj_14_wat_lig = [i for i, s in enumerate(energy_df) if 'LJ-14:Water' in s][0] #4
+
+        df = {}
+
+        df["{}_intra_crf".format(cls.string_identifier)] = energy_array[:,idx_coul_sr_lig] + energy_array[:,idx_coul_14_lig]
+        
+        df["{}_intra_lj".format(cls.string_identifier)] = energy_array[:,idx_lj_sr_lig] + energy_array[:,idx_lj_14_lig]
+
+        df["{}_intra_ene".format(cls.string_identifier)] = np.sum(energy_array[:,[idx_coul_sr_lig, idx_coul_14_lig, idx_lj_sr_lig, idx_lj_14_lig]], axis=1) 
+
+        df["{}_total_crf".format(cls.string_identifier)] = energy_array[:,idx_coul_sr_lig] + energy_array[:,idx_coul_14_lig] + energy_array[:,idx_coul_sr_wat_lig] + energy_array[:,idx_coul_14_wat_lig] 
+
+        df["{}_total_lj".format(cls.string_identifier)] = energy_array[:,idx_lj_sr_lig] + energy_array[:,idx_lj_14_lig] + energy_array[:,idx_lj_sr_wat_lig] + energy_array[:,idx_lj_14_wat_lig]
+
+        df["{}_total_ene".format(cls.string_identifier)] = np.sum(energy_array[:,[idx_coul_sr_lig, idx_coul_14_lig, idx_lj_sr_lig, idx_lj_14_lig, idx_coul_sr_wat_lig, idx_coul_14_wat_lig, idx_lj_sr_wat_lig, idx_lj_14_wat_lig]], axis=1)
+
+        return df
+
+    @classmethod
+    def custom_extract(cls, df, **kwargs):
+        raise NotImplementedError
+
+    #TODO make sure this only includes the solute
     @classmethod
     def extract_rgyr(cls, mdtraj_obj, **kwargs):
         """
@@ -493,7 +601,10 @@ class BaseExtractor():
             Key is prefix_rgyr, where prefix changes depending on the type of Extractor class used. Values are the corresponding set of numerics, stored as lists.
         """
         df = {}
-        df["{}_rgyr".format(cls.string_identifier)] = list(md.compute_rg(mdtraj_obj, masses = np.array([a.element.mass for a in mdtraj_obj.topology.atoms])))
+
+        solute_atoms, _ = cls._solute_solvent_split(mdtraj_obj.topology, **kwargs)
+        solute_mdtraj_obj = mdtraj_obj.atom_slice(list(solute_atoms))
+        df["{}_rgyr".format(cls.string_identifier)] = list(md.compute_rg(solute_mdtraj_obj, masses = np.array([a.element.mass for a in solute_mdtraj_obj.topology.atoms])))
         return df
 
     @classmethod
@@ -513,10 +624,97 @@ class BaseExtractor():
             Key is prefix_sasa, where prefix changes depending on the type of Extractor class used. Values are the corresponding set of numerics, stored as lists.
         """
         df = {}
-        #df["{}_sasa".format(cls.string_identifier)] = list(md.compute_rg(mdtraj_obj.atom_slice(mdtraj_obj.topology.select("resid 0")))) # this was what I had before which should be incorrect
-        df["{}_sasa".format(cls.string_identifier)] = list(md.shrake_rupley(mdtraj_obj.atom_slice(mdtraj_obj.topology.select("resid 0")), mode = "residue"))
+        solute_atoms, _ = cls._solute_solvent_split(mdtraj_obj.topology, **kwargs)
+        solute_mdtraj_obj = mdtraj_obj.atom_slice(list(solute_atoms))
+        df["{}_sasa".format(cls.string_identifier)] = list(md.shrake_rupley(solute_mdtraj_obj, mode = "residue"))
         return df
 
+
+    @classmethod
+    def extract_psa3d(cls, mdtraj_obj, obj_list=None, include_SandP = None, cmpd_name = None, atom_to_remove = None, **kwargs):#TODO check that it is always consistently called 'psa3d' not 3dpsa or others
+        """ ###TODO modify documentation
+        Calculates the 3d polar surface area (3D-PSA) of molecules in Interface_Pymol for all the snapshots in a MD trajectory.
+        (Contribution by Benjamin Schroeder)
+   
+        Parameters:
+        -------------
+        traj_file: str
+            trajectory filename
+        gro_file: str 
+            coordinates filename (.gro or .pdb)
+        cmpd_name: str, optional
+            Name of the compound used as object name (default is "cmpd1")
+        include_SandP: bool, optional 
+            Set to False to exclude the S and P atoms from the calculation of the 3D-PSA. (Default = True) #TODO now you have S always included right?
+        atom_to_remove: str, optional
+            Single atom name of the atom to remove from the selection (Default = None). 
+            Useful if you want to include only S or only P in the calculation of the 3D-PSA.
+
+        Returns
+        ----------
+        dict_psa3d: dict
+            Keys are mean (3d_psa_av), standard deviation (3d_psa_sd), and median (3d_psa_med) of the 3D-PSA calculated over the simulation time. 
+            If cmpd_name is specified, it is returned in the dictionary.
+        """
+        try:
+            from pymol import cmd
+        except ImportError:
+            raise ImportError('Extract 3D PSA is not possible beacause PyMol python handle not properly installed.')
+
+        solute_atoms, _ = cls._solute_solvent_split(mdtraj_obj.topology, **kwargs)
+        solute_mdtraj_obj = mdtraj_obj.atom_slice(list(solute_atoms))
+
+        if "parmed_obj" in kwargs:
+            solute_charges = [i.charge for idx,i in enumerate(kwargs["parmed_obj"].atoms) if idx in solute_atoms ]
+
+        tmp_dir = tempfile.mkdtemp()
+        traj_filename = tempfile.mktemp(suffix=".pdb", dir = tmp_dir) 
+        #TODO is this the most efficient file format? 
+        solute_mdtraj_obj.save(traj_filename)
+        
+        if cmpd_name == None:
+            cmpd_name = "cmpd1" #TODO really needed?
+        
+
+        # Load trajectory and remove solvent and salts
+        obj1 = cmpd_name 
+        cmd.reinitialize()
+        cmd.load(traj_filename, object=obj1)
+        # cmd.load_traj(traj_filename, object=obj1)
+
+        atom_names = []
+        cmd.iterate_state(-1, selection=obj1 + " and not elem H", expression="atom_names.append(name)", space=locals())
+
+        # IO
+        obj_list = cmd.get_names("objects")
+        assert len(obj_list) == 1
+        # Select first (and only) object, which contains the trajectory for the solute molecule
+        obj = obj_list[0]
+        cmd.frame(0)
+        states = range(1, cmd.count_states(obj) + 1)  # get all states of the object
+
+        #TODO simplify
+        ###Generate pymol selection string. Select the atoms based on the atom types (O,N, polar H and optionally S and P) or provide a customed_selection
+        # if atom_to_remove != None and isinstance(atom_to_remove, str):
+        if True: #FIXME
+            if include_SandP:
+                select_string = "(elem N or elem O or elem S or elem P or (elem H and (neighbor elem N+O+S+P))) and {} and not name {}".format(obj, atom_to_remove)  #@carmen add: "or elem S"
+            else:
+                select_string = "(elem N or elem O or (elem H and (neighbor elem N+O))) and {} and not name {}".format(obj, atom_to_remove)  #@carmen add: "or elem S"
+        # else:
+        #     if include_SandP:
+        #         select_string = "resn {} and (elem N or elem O or elem S or elem P or (elem H and (neighbor elem N+O+S+P))) and ".format(solute_resname) + obj   #@carmen add: "or elem S"
+        #     else:
+        #         select_string = "resn {} and (elem N or elem O or (elem H and (neighbor elem N+O))) and ".format(solute_resname) + obj  #@carmen add: "or elem S"
+        ##Loop over all states
+        psa = []
+        for state in states:
+                cmd.select("noh", select_string) #TODO is this really always called 'noh'?
+                ###calc surface area
+                psa.append(float(cmd.get_area("noh", state=state)) * 0.01) #unit conversion from A^2 to nm^2
+
+        df = {"{}_psa3d".format(cls.string_identifier) :  psa} 
+        return df
 
 ###############################################
 ###############################################
@@ -534,18 +732,20 @@ class SolutionExtractor(BaseExtractor):
     string_identifier = "solution"
 
     @classmethod
-    def _solute_solvent_split(cls, topology):
+    def _solute_solvent_split(cls, topology, solute_residue_name = None, **kwargs):
         """
         Distinguish solutes from solvents, used in :func:`~BaseExtractor._extract_energies_helper`
 
-        The following is assumed:
+        Unless otherwise specified, the following is assumed:
             - there are only two type of residues
             - the residue that is lesser in number is the solute
 
 
         Parameters
         -----------
-        topology : parmed.topology
+        topology : mdtraj.topology
+        solute_residue_name: str or list, optional
+            name or list of names of the residue(s) to consider as solute, default is None
 
         Returns
         ------------
@@ -554,30 +754,42 @@ class SolutionExtractor(BaseExtractor):
         solvent_atoms : set
             set of solvent_atoms indices
         """
-        reslist = [res.name for res in topology.residues()]
-        resname = set(reslist)
-        resname1 = resname.pop()
-        try:
-            resname2 = resname.pop()
-        except:
-            resname2 = None
-        if resname2 is None:
-            solvent_name = resname2
-        elif reslist.count(resname1) > reslist.count(resname2):
-            solvent_name = resname1
-        elif reslist.count(resname1) < reslist.count(resname2):
-            solvent_name = resname2
-        else:
-            raise ValueError("num of two species equal, cannot determine")
-        solute_atoms = set()
-        solvent_atoms = set()
-        #topology = parm.topology
-        for atom in topology.atoms():
-            if atom.residue.name == solvent_name :
-                solvent_atoms.add(atom.index)
+        if solute_residue_name is None:    
+            reslist = [res.name for res in topology.residues]
+            resname = set(reslist)
+            resname1 = resname.pop()
+            try:
+                resname2 = resname.pop()
+            except:
+                resname2 = None #FIXME is this sensible???
+            if resname2 is None:
+                solvent_name = resname2
+            elif reslist.count(resname1) > reslist.count(resname2):
+                solvent_name = resname1
+            elif reslist.count(resname1) < reslist.count(resname2):
+                solvent_name = resname2
             else:
-                solute_atoms.add(atom.index)
+                raise ValueError("num of two species equal, cannot determine")
+            solute_atoms = set()
+            solvent_atoms = set()
+            for atom in topology.atoms:
+                if atom.residue.name == solvent_name :
+                    solvent_atoms.add(atom.index)
+                else:
+                    solute_atoms.add(atom.index)
+            return solute_atoms, solvent_atoms
+
+        elif isinstance(solute_residue_name, list):
+            solute_atoms = []
+            for res_name in solute_residue_name:
+                solute_atoms = solute_atoms + [atom.index for atom in topology.atoms if atom.residue.name == res_name]
+        else:
+            solute_atoms = [atom.index for atom in topology.atoms if atom.residue.name == solute_residue_name]
+            if len(solute_atoms) == 0:
+                print("The topology file does not containg any residue named '{}'. No solute atom extracted.".format(solute_residue_name))
+        solvent_atoms = [atom.index for atom in topology.atoms if atom.residue.name != 'LIG'] #FIXME this would include the ions right?
         return solute_atoms, solvent_atoms
+
 
 
     @classmethod
@@ -589,7 +801,7 @@ class SolutionExtractor(BaseExtractor):
         Parameters
         -----------
         system : OpenMM.System
-        topology : parmed.topology
+        topology : mdtraj.topology
 
         Returns
         ------------
@@ -609,7 +821,7 @@ class SolutionExtractor(BaseExtractor):
         solute_idx, solvent_idx = cls._solute_solvent_split(topology)
 
         #python3, for python2 use  set((b[0].index, b[1].index) if b[0].index < b[1].index else (b[1].index, b[0].index) for b in topology.bonds())
-        bonded_pairs =  {(b[0].index, b[1].index) if b[0].index < b[1].index else (b[1].index, b[0].index) for b in topology.bonds()}
+        bonded_pairs =  {(b[0].index, b[1].index) if b[0].index < b[1].index else (b[1].index, b[0].index) for b in topology.bonds}
         angle_ends = set()
         for i in range(angleForce.getNumAngles()):
             particle1,particle2,particle3, *rest = angleForce.getAngleParameters(i)
@@ -780,13 +992,13 @@ class LiquidExtractor(BaseExtractor):
             Key is prefix_dipole_magnitude, where prefix changes depending on the type of Extractor class used. Values are the corresponding set of numerics, stored as lists.
         """
         df = {}
-        #TODO
+        #TODO is it reasonable to consider all the molecules in the box?
         charges = [i.charge for i in parmed_obj.atoms]
         df["{}_dipole_magnitude".format(cls.string_identifier)] = [np.linalg.norm(i) for i in md.dipole_moments(mdtraj_obj, charges)]
         return df
 
     @classmethod
-    def _solute_solvent_split(cls, topology):
+    def _solute_solvent_split(cls, topology, **kwargs):
         """
         Distinguish solutes from solvents, used in :func:`~BaseExtractor._extract_energies_helper`
 
@@ -796,7 +1008,7 @@ class LiquidExtractor(BaseExtractor):
 
         Parameters
         -----------
-        topology : parmed.topology
+        topology : mdtraj.topology
 
         Returns
         ------------
@@ -807,7 +1019,7 @@ class LiquidExtractor(BaseExtractor):
         """
         solute_atoms = set()
         solvent_atoms = set()
-        for atom in topology.atoms():
+        for atom in topology.atoms:
             if atom.residue.index == 0 :
                 solute_atoms.add(atom.index)
             else:
@@ -823,7 +1035,7 @@ class LiquidExtractor(BaseExtractor):
         Parameters
         -----------
         system : OpenMM.System
-        topology : parmed.topology
+        topology : mdtraj.topology
 
         Returns
         ------------
@@ -844,7 +1056,7 @@ class LiquidExtractor(BaseExtractor):
         solute_idx, solvent_idx = cls._solute_solvent_split(topology)
 
         #python3, for python2 use  set((b[0].index, b[1].index) if b[0].index < b[1].index else (b[1].index, b[0].index) for b in topology.bonds())
-        bonded_pairs =  {(b[0].index, b[1].index) if b[0].index < b[1].index else (b[1].index, b[0].index) for b in topology.bonds()}
+        bonded_pairs =  {(b[0].index, b[1].index) if b[0].index < b[1].index else (b[1].index, b[0].index) for b in topology.bonds}
         angle_ends = set()
         for i in range(angleForce.getNumAngles()):
             particle1,particle2,particle3, *rest = angleForce.getAngleParameters(i)

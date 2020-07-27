@@ -1,0 +1,8 @@
+source leaprc.ff99SB
+source leaprc.gaff
+LIG = loadmol2 test.mol2 
+check LIG 
+loadamberparams test.frcmod
+saveoff LIG test.lib 
+saveamberparm LIG test.prmtop test.inpcrd
+quit
