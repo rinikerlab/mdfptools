@@ -1,4 +1,7 @@
 import pickle
+from mdtraj.geometry import _geometry
+from mdtraj.utils import ensure_type
+import copy
 from simtk.openmm.app import *
 from simtk.openmm import *
 from simtk.unit import *
@@ -607,6 +610,120 @@ class BaseExtractor():
         df["{}_rgyr".format(cls.string_identifier)] = list(md.compute_rg(solute_mdtraj_obj, masses = np.array([a.element.mass for a in solute_mdtraj_obj.topology.atoms])))
         return df
 
+
+    @classmethod
+    def _shrake_rupley(cls, traj, probe_radius=0.14, n_sphere_points=960, mode='residue', change_radii=None):
+        """Compute the solvent accessible surface area of each atom or residue in each simulation frame. 
+    
+        Modified from MDTraj
+    
+        Parameters
+        ----------
+        traj : Trajectory
+            An mtraj trajectory.
+        probe_radius : float, optional
+            The radius of the probe, in nm.
+        n_sphere_points : int, optional
+            The number of points representing the surface of each atom, higher
+            values leads to more accuracy.
+        mode : {'atom', 'residue'}
+            In mode == 'atom', the extracted areas are resolved per-atom
+            In mode == 'residue', this is consolidated down to the
+            per-residue SASA by summing over the atoms in each residue.
+        change_radii : dict, optional
+            A partial or complete dict containing the radii to change from the 
+            defaults. Should take the form {"Symbol" : radii_in_nm }, e.g. 
+            {"Cl" : 0.181 } to change the radii of Chlorine to 181 pm for the ionic Cl-.
+        Returns
+        -------
+        areas : np.array, shape=(n_frames, n_features)
+            The accessible surface area of each atom or residue in every frame.
+            If mode == 'atom', the second dimension will index the atoms in
+            the trajectory, whereas if mode == 'residue', the second
+            dimension will index the residues.
+        """
+
+        _ATOMIC_RADII = {'H'   : 0.120, 'He'  : 0.140, 'Li'  : 0.076, 'Be' : 0.059,
+                         'B'   : 0.192, 'C'   : 0.170, 'N'   : 0.155, 'O'  : 0.152,
+                         'F'   : 0.147, 'Ne'  : 0.154, 'Na'  : 0.102, 'Mg' : 0.086,
+                         'Al'  : 0.184, 'Si'  : 0.210, 'P'   : 0.180, 'S'  : 0.180,
+                         'Cl'  : 0.175, 'Ar'  : 0.188, 'K'   : 0.138, 'Ca' : 0.114,
+                         'Sc'  : 0.211, 'Ti'  : 0.200, 'V'   : 0.200, 'Cr' : 0.200,
+                         'Mn'  : 0.200, 'Fe'  : 0.200, 'Co'  : 0.200, 'Ni' : 0.163, 
+                         'Cu'  : 0.140, 'Zn'  : 0.139, 'Ga'  : 0.187, 'Ge' : 0.211,
+                         'As'  : 0.185, 'Se'  : 0.190, 'Br'  : 0.185, 'Kr' : 0.202, 
+                         'Rb'  : 0.303, 'Sr'  : 0.249, 'Y'   : 0.200, 'Zr' : 0.200,
+                         'Nb'  : 0.200, 'Mo'  : 0.200, 'Tc'  : 0.200, 'Ru' : 0.200,
+                         'Rh'  : 0.200, 'Pd'  : 0.163, 'Ag'  : 0.172, 'Cd' : 0.158,  
+                         'In'  : 0.193, 'Sn'  : 0.217, 'Sb'  : 0.206, 'Te' : 0.206,
+                         'I'   : 0.198, 'Xe'  : 0.216, 'Cs'  : 0.167, 'Ba' : 0.149,
+                         'La'  : 0.200, 'Ce'  : 0.200, 'Pr'  : 0.200, 'Nd' : 0.200,
+                         'Pm'  : 0.200, 'Sm'  : 0.200, 'Eu'  : 0.200, 'Gd' : 0.200,
+                         'Tb'  : 0.200, 'Dy'  : 0.200, 'Ho'  : 0.200, 'Er' : 0.200,
+                         'Tm'  : 0.200, 'Yb'  : 0.200, 'Lu'  : 0.200, 'Hf' : 0.200,
+                         'Ta'  : 0.200, 'W'   : 0.200, 'Re'  : 0.200, 'Os' : 0.200,
+                         'Ir'  : 0.200, 'Pt'  : 0.175, 'Au'  : 0.166, 'Hg' : 0.155,
+                         'Tl'  : 0.196, 'Pb'  : 0.202, 'Bi'  : 0.207, 'Po' : 0.197,
+                         'At'  : 0.202, 'Rn'  : 0.220, 'Fr'  : 0.348, 'Ra' : 0.283,
+                         'Ac'  : 0.200, 'Th'  : 0.200, 'Pa'  : 0.200, 'U'  : 0.186,
+                         'Np'  : 0.200, 'Pu'  : 0.200, 'Am'  : 0.200, 'Cm' : 0.200,
+                         'Bk'  : 0.200, 'Cf'  : 0.200, 'Es'  : 0.200, 'Fm' : 0.200,
+                         'Md'  : 0.200, 'No'  : 0.200, 'Lr'  : 0.200, 'Rf' : 0.200,
+                         'Db'  : 0.200, 'Sg'  : 0.200, 'Bh'  : 0.200, 'Hs' : 0.200,
+                         'Mt'  : 0.200, 'Ds'  : 0.200, 'Rg'  : 0.200, 'Cn' : 0.200,
+                         'Uut' : 0.200, 'Fl'  : 0.200, 'Uup' : 0.200, 'Lv' : 0.200,
+                         'Uus' : 0.200, 'Uuo' : 0.200}
+
+
+        xyz = ensure_type(traj.xyz, dtype=np.float32, ndim=3, name='traj.xyz', shape=(None, None, 3), warn_on_cast=False)
+
+        if mode == 'atom':
+            dim1 = xyz.shape[1]
+            atom_mapping = np.arange(dim1, dtype=np.int32)
+
+        elif mode == 'residue':
+            dim1 = traj.n_residues
+            if dim1 == 1:
+                atom_mapping = np.array([0] * xyz.shape[1], dtype=np.int32)
+            else:
+                atom_mapping = np.array([a.residue.index for a in traj.top.atoms], dtype=np.int32)
+                if not np.all(np.unique(atom_mapping) == np.arange(1 + np.max(atom_mapping))):
+                    raise ValueError('residues must have contiguous integer indices starting from zero')
+        else:
+            raise ValueError('mode must be one of "residue", "atom". "{}" supplied'.format(mode))
+
+    
+        modified_radii = {}
+        if change_radii is not None:
+            # in case _ATOMIC_RADII is in use elsehwere...
+            modified_radii = copy.deepcopy(_ATOMIC_RADII)
+            # Now, modify the values specified in 'change_radii'
+            for k, v in change_radii.items(): modified_radii[k] = v
+
+
+        out = np.zeros((xyz.shape[0], dim1), dtype=np.float32)
+        atom_radii = []
+        for atom in traj.topology.atoms: 
+            atom_name = "{}".format(atom).split('-')[1]
+            element = ''.join(i for i in atom_name if not i.isdigit())
+            if bool(modified_radii):
+                try:
+                    atom_radii.append(modified_radii[element])
+                except KeyError:
+                    atom_radii = [modified_radii[atom.element.symbol] for atom in traj.topology.atoms]
+            else:
+                try:
+                    atom_radii.append(_ATOMIC_RADII[element])
+                except KeyError:
+                    atom_radii = [_ATOMIC_RADII[atom.element.symbol] for atom in traj.topology.atoms]
+
+
+        radii = np.array(atom_radii, np.float32) + probe_radius
+    
+        _geometry._sasa(xyz, radii, int(n_sphere_points), atom_mapping, out)
+    
+        return out
+
     @classmethod
     def extract_sasa(cls, mdtraj_obj, **kwargs):
         """
@@ -626,7 +743,7 @@ class BaseExtractor():
         df = {}
         solute_atoms, _ = cls._solute_solvent_split(mdtraj_obj.topology, **kwargs)
         solute_mdtraj_obj = mdtraj_obj.atom_slice(list(solute_atoms))
-        df["{}_sasa".format(cls.string_identifier)] = list(md.shrake_rupley(solute_mdtraj_obj, mode = "residue"))
+        df["{}_sasa".format(cls.string_identifier)] = list(cls._shrake_rupley(solute_mdtraj_obj, mode = "residue"))
         return df
 
 
@@ -735,18 +852,16 @@ class SolutionExtractor(BaseExtractor):
     def _solute_solvent_split(cls, topology, solute_residue_name = None, **kwargs):
         """
         Distinguish solutes from solvents, used in :func:`~BaseExtractor._extract_energies_helper`
-
-        Unless otherwise specified, the following is assumed:
-            - there are only two type of residues
-            - the residue that is lesser in number is the solute
-
-
+        Unless otherwise specified (see the solute_residue_name argument), the following is assumed:
+            - if there is only one type of residues, that residue is considered as solute
+            - if there are two types of residues, the residue that is lesser in number is the solute
+            - if there are more than two types of residues, the residue that is lesser in number is the solute
+            - if there are more than two types of residues and multiple residues are the same in number (eg. 1 solute, 1 counter-ion, 100 solvent molecules), the residue with the least occurrence and the highest number of atoms is the solute. Counter-ions are, consequently, considered as solvent molecules.
         Parameters
         -----------
         topology : mdtraj.topology
         solute_residue_name: str or list, optional
             name or list of names of the residue(s) to consider as solute, default is None
-
         Returns
         ------------
         solute_atoms : set
@@ -754,41 +869,49 @@ class SolutionExtractor(BaseExtractor):
         solvent_atoms : set
             set of solvent_atoms indices
         """
-        if solute_residue_name is None:    
-            reslist = [res.name for res in topology.residues]
-            resname = set(reslist)
-            resname1 = resname.pop()
-            try:
-                resname2 = resname.pop()
-            except:
-                resname2 = None #FIXME is this sensible???
-            if resname2 is None:
-                solvent_name = resname2
-            elif reslist.count(resname1) > reslist.count(resname2):
-                solvent_name = resname1
-            elif reslist.count(resname1) < reslist.count(resname2):
-                solvent_name = resname2
+        if solute_residue_name is None:  
+            reslist = [res.name for res in topology.residues if res.name not in ['Cl-', 'Na+', 'K+']]
+            resnames, count_res = np.unique(reslist, return_counts = True)
+            if len(count_res) == 2:
+                solute_residue_name = resnames[np.argmin(count_res)]
+            elif len(count_res) == 1:
+                solute_residue_name = resnames[0]
             else:
-                raise ValueError("num of two species equal, cannot determine")
-            solute_atoms = set()
-            solvent_atoms = set()
-            for atom in topology.atoms:
-                if atom.residue.name == solvent_name :
-                    solvent_atoms.add(atom.index)
+                if list(count_res).count(int(min(count_res))) == 1:
+                    solute_residue_name = resnames[np.argmin(count_res)]
                 else:
-                    solute_atoms.add(atom.index)
-            return solute_atoms, solvent_atoms
-
-        elif isinstance(solute_residue_name, list):
+                    # if there are multiple molecules that may be a solute, then the solute is the molecule with the greatest number of atoms. 
+                    N_atoms = []
+                    res_to_check = [r for r in list(resnames) if reslist.count(r) == min(count_res)]
+                    for res1 in res_to_check:
+                        try:
+                            top_subset = topology.subset(topology.select('resname {}'.format(res1))) #this command gives an error for ions. See except.
+                            N_atoms.append(len([a for a in top_subset.atoms]))
+                        except:
+                            try:
+                                for res in topology.residues:
+                                    if res.name == 'Cl-':
+                                        N_atoms.append(len([a for a in res.atoms]))
+                            except:
+                                 print("Error: Atoms of residue {} could not be counted")
+                    if len(N_atoms) == len(res_to_check):
+                        solute_residue_name = res_to_check[np.argmax(N_atoms)]
+                    else:
+                       print("Error: The solute molecule could not be identified.")
+                       return
+        if isinstance(solute_residue_name, list):
             solute_atoms = []
             for res_name in solute_residue_name:
                 solute_atoms = solute_atoms + [atom.index for atom in topology.atoms if atom.residue.name == res_name]
-        else:
+            solvent_atoms = [atom.index for atom in topology.atoms if atom.residue.name not in solute_residue_name] #FIXME this would include the ions right? Yes
+        elif isinstance(solute_residue_name, str):
             solute_atoms = [atom.index for atom in topology.atoms if atom.residue.name == solute_residue_name]
             if len(solute_atoms) == 0:
                 print("The topology file does not containg any residue named '{}'. No solute atom extracted.".format(solute_residue_name))
-        solvent_atoms = [atom.index for atom in topology.atoms if atom.residue.name != 'LIG'] #FIXME this would include the ions right?
-        return solute_atoms, solvent_atoms
+            solvent_atoms = [atom.index for atom in topology.atoms if atom.residue.name != solute_residue_name] #FIXME this would include the ions right? Yes
+        else:
+            raise ValueError("The solute molecule could not be identified.")
+        return solute_atoms, solvent_atoms  
 
 
 
