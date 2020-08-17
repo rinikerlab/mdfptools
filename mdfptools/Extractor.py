@@ -850,18 +850,16 @@ class SolutionExtractor(BaseExtractor):
     def _solute_solvent_split(cls, topology, solute_residue_name = None, **kwargs):
         """
         Distinguish solutes from solvents, used in :func:`~BaseExtractor._extract_energies_helper`
-
-        Unless otherwise specified, the following is assumed:
-            - there are only two type of residues
-            - the residue that is lesser in number is the solute
-
-
+        Unless otherwise specified (see the solute_residue_name argument), the following is assumed:
+            - if there is only one type of residues, that residue is considered as solute
+            - if there are two types of residues, the residue that is lesser in number is the solute
+            - if there are more than two types of residues, the residue that is lesser in number is the solute
+            - if there are more than two types of residues and multiple residues are the same in number (eg. 1 solute, 1 counter-ion, 100 solvent molecules), the residue with the least occurrence and the highest number of atoms is the solute. Counter-ions are, consequently, considered as solvent molecules.
         Parameters
         -----------
         topology : mdtraj.topology
         solute_residue_name: str or list, optional
             name or list of names of the residue(s) to consider as solute, default is None
-
         Returns
         ------------
         solute_atoms : set
@@ -869,41 +867,49 @@ class SolutionExtractor(BaseExtractor):
         solvent_atoms : set
             set of solvent_atoms indices
         """
-        if solute_residue_name is None:    
-            reslist = [res.name for res in topology.residues]
-            resname = set(reslist)
-            resname1 = resname.pop()
-            try:
-                resname2 = resname.pop()
-            except:
-                resname2 = None #FIXME is this sensible???
-            if resname2 is None:
-                solvent_name = resname2
-            elif reslist.count(resname1) > reslist.count(resname2):
-                solvent_name = resname1
-            elif reslist.count(resname1) < reslist.count(resname2):
-                solvent_name = resname2
+        if solute_residue_name is None:  
+            reslist = [res.name for res in topology.residues if res.name not in ['Cl-', 'Na+', 'K+']]
+            resnames, count_res = np.unique(reslist, return_counts = True)
+            if len(count_res) == 2:
+                solute_residue_name = resnames[np.argmin(count_res)]
+            elif len(count_res) == 1:
+                solute_residue_name = resnames[0]
             else:
-                raise ValueError("num of two species equal, cannot determine")
-            solute_atoms = set()
-            solvent_atoms = set()
-            for atom in topology.atoms:
-                if atom.residue.name == solvent_name :
-                    solvent_atoms.add(atom.index)
+                if list(count_res).count(int(min(count_res))) == 1:
+                    solute_residue_name = resnames[np.argmin(count_res)]
                 else:
-                    solute_atoms.add(atom.index)
-            return solute_atoms, solvent_atoms
-
-        elif isinstance(solute_residue_name, list):
+                    # if there are multiple molecules that may be a solute, then the solute is the molecule with the greatest number of atoms. 
+                    N_atoms = []
+                    res_to_check = [r for r in list(resnames) if reslist.count(r) == min(count_res)]
+                    for res1 in res_to_check:
+                        try:
+                            top_subset = topology.subset(topology.select('resname {}'.format(res1))) #this command gives an error for ions. See except.
+                            N_atoms.append(len([a for a in top_subset.atoms]))
+                        except:
+                            try:
+                                for res in topology.residues:
+                                    if res.name == 'Cl-':
+                                        N_atoms.append(len([a for a in res.atoms]))
+                            except:
+                                 print("Error: Atoms of residue {} could not be counted")
+                    if len(N_atoms) == len(res_to_check):
+                        solute_residue_name = res_to_check[np.argmax(N_atoms)]
+                    else:
+                       print("Error: The solute molecule could not be identified.")
+                       return
+        if isinstance(solute_residue_name, list):
             solute_atoms = []
             for res_name in solute_residue_name:
                 solute_atoms = solute_atoms + [atom.index for atom in topology.atoms if atom.residue.name == res_name]
-        else:
+            solvent_atoms = [atom.index for atom in topology.atoms if atom.residue.name not in solute_residue_name] #FIXME this would include the ions right? Yes
+        elif isinstance(solute_residue_name, str):
             solute_atoms = [atom.index for atom in topology.atoms if atom.residue.name == solute_residue_name]
             if len(solute_atoms) == 0:
                 print("The topology file does not containg any residue named '{}'. No solute atom extracted.".format(solute_residue_name))
-        solvent_atoms = [atom.index for atom in topology.atoms if atom.residue.name != 'LIG'] #FIXME this would include the ions right?
-        return solute_atoms, solvent_atoms
+            solvent_atoms = [atom.index for atom in topology.atoms if atom.residue.name != solute_residue_name] #FIXME this would include the ions right? Yes
+        else:
+            raise ValueError("The solute molecule could not be identified.")
+        return solute_atoms, solvent_atoms  
 
 
 
