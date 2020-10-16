@@ -20,7 +20,7 @@ import numpy as np
 # from mdfptools.utils import get_data_filename
 # from .utils import get_data_filename
 # from utils import get_data_filename
-from .utils import get_data_filename
+from .utils import get_data_filename, approximate_volume_by_density
 """
 TODOs:
     - proper handling of tip3p water loading
@@ -366,7 +366,7 @@ class LiquidParameteriser(BaseParameteriser):
 
     @classmethod
     def _via_helper(cls, density, num_lig, **kwargs):
-        #TODO !!!!!!!!!!!! approximating volue by density if not possible via rdkit at the moment.
+        #TODO !!!!!!!!!!!! approximating volume by density if not possible via rdkit at the moment.
         """
         Helper function for via_rdkit or via_openeye
 
@@ -387,8 +387,12 @@ class LiquidParameteriser(BaseParameteriser):
         density = density.value_in_unit(unit.gram / unit.milliliter)
 
         ligand_mdtraj = md.load(cls.pdb_filename)[0]
-        #box_size = packmol.approximate_volume_by_density([smiles], [num_lig], density=density, 		box_scaleup_factor=1.1, box_buffer=2.0)
-        box_size = packmol.approximate_volume_by_density([cls.smiles], [num_lig], density=density, 		box_scaleup_factor=1.5, box_buffer=2.0)
+        try: #TODO better error handling if openeye is not detected
+            #box_size = packmol.approximate_volume_by_density([smiles], [num_lig], density=density, 		box_scaleup_factor=1.1, box_buffer=2.0)
+            box_size = packmol.approximate_volume_by_density([cls.smiles], [num_lig], density=density, 		box_scaleup_factor=1.5, box_buffer=2.0)
+        except:
+            box_size = approximate_volume_by_density([cls.smiles], [num_lig], density=density, 		box_scaleup_factor=1.5, box_buffer=2.0)
+
         packmol_out = packmol.pack_box([ligand_mdtraj], [num_lig], box_size = box_size)
 
 
