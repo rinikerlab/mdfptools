@@ -1,4 +1,5 @@
 import tempfile
+from functools import partialmethod
 
 # import contextlib
 
@@ -131,7 +132,7 @@ class BaseParameteriser():
         except Exception as e:
             raise ValueError("Parameterisation Failed : {}".format(e)) #TODO
 
-        ligand_pmd.title = cls.smiles
+        # ligand_pmd.title = cls.smiles
 
         for i in ligand_pmd.residues:
             i.name = 'LIG'
@@ -141,8 +142,7 @@ class BaseParameteriser():
         # and mdtraj.Trajectory for restoring bonds later.
         pdb_filename = tempfile.mktemp(suffix=".pdb", dir=tmp_dir)
         Chem.MolToPDBFile(mol, pdb_filename)
-        cls.pdb_filename = pdb_filename
-        cls.ligand_pmd = ligand_pmd
+        return pdb_filename, ligand_pmd
 
     @classmethod
     def load_ddec_models(cls, epsilon = 4, **kwargs):
@@ -207,10 +207,11 @@ class BaseParameteriser():
         # reduced the default total number of confs from 800 to 100 to save execution time
         eWindow = 15.0
         cls.omega.SetEnergyWindow(eWindow)
-        if "openeye_maxconf" in kwargs and type(kwargs["openeye_maxconf"]) is int and kwargs["openeye_maxconf"] > 0 :
-            cls.omega.SetMaxConfs(kwargs["openeye_maxconf"])
-        else:
-            cls.omega.SetMaxConfs(100)
+        # if "openeye_maxconf" in kwargs and type(kwargs["openeye_maxconf"]) is int and kwargs["openeye_maxconf"] > 0 :
+        #     cls.omega.SetMaxConfs(kwargs["openeye_maxconf"])
+        # else:
+        #     cls.omega.SetMaxConfs(100)
+        cls.omega.SetMaxConfs(1)
         cls.omega.SetRMSThreshold(1.0)
 
 
@@ -264,7 +265,7 @@ class BaseParameteriser():
         except Exception as e:
             raise ValueError("Parameterisation Failed : {}".format(e)) #TODO
 
-        ligand_pmd.title = cls.smiles
+        # ligand_pmd.title = cls.smiles
 
         for i in ligand_pmd.residues:
             i.name = 'LIG'
@@ -275,8 +276,7 @@ class BaseParameteriser():
         pdb_filename = tempfile.mktemp(suffix=".pdb", dir=tmp_dir)
         from openeye import oechem # OpenEye Python toolkits
         oechem.OEWriteMolecule( oechem.oemolostream( pdb_filename ), mol)
-        cls.pdb_filename = pdb_filename
-        cls.ligand_pmd = ligand_pmd
+        return pdb_filename, ligand_pmd
 
     @classmethod
     def save(cls, file_name, file_path = "./", **kwargs):
@@ -309,7 +309,7 @@ class LiquidParameteriser(BaseParameteriser):
     Parameterisation of liquid box, i.e. multiple replicates of the same molecule
     """
 
-    @classmethod
+    @classmethod #TODO boxsize packing scale factor should be customary
     def via_openeye(cls, smiles, density, allow_undefined_stereo = False, num_lig = 100, **kwargs):
         """
         Parameterisation perfromed via openeye toolkit.
@@ -333,12 +333,12 @@ class LiquidParameteriser(BaseParameteriser):
         cls.allow_undefined_stereo = allow_undefined_stereo
         mol = cls._openeye_setter(smiles, **kwargs)
         # mol = cls._openeye_charger(mol)
-        cls._openeye_parameteriser(mol, **kwargs)
+        cls.pdb_filename, cls.ligand_pmd = cls._openeye_parameteriser(mol, **kwargs)
         return cls._via_helper(density, num_lig, **kwargs)
 
     @classmethod
     def via_rdkit(cls, smiles, density, allow_undefined_stereo = False, num_lig = 100, **kwargs):
-        #TODO !!!!!!!!!!!! approximating volue by density if not possible via rdkit at the moment.
+        #TODO !!!!!!!!!!!! approximating volume by density if not possible via rdkit at the moment.
         """
         Parameterisation perfromed via rdkit.
 
@@ -361,7 +361,7 @@ class LiquidParameteriser(BaseParameteriser):
         cls.allow_undefined_stereo = allow_undefined_stereo
         mol = cls._rdkit_setter(smiles, **kwargs)
         # mol = cls._openeye_charger(mol)
-        cls._rdkit_parameteriser(mol, **kwargs)
+        cls.pdb_filename, cls.ligand_pmd = cls._rdkit_parameteriser(mol, **kwargs)
         return cls._via_helper(density, num_lig, **kwargs)
 
     @classmethod
@@ -382,7 +382,7 @@ class LiquidParameteriser(BaseParameteriser):
         system_pmd : parmed.structure
             The parameterised system as parmed object
         """
-        import mdtraj as md
+        import mdtraj as md #TODO packmol can accept file name as input too, no need for this really
         from openmoltools import packmol
         density = density.value_in_unit(unit.gram / unit.milliliter)
 
@@ -400,8 +400,8 @@ class LiquidParameteriser(BaseParameteriser):
         cls.system_pmd.positions = packmol_out.openmm_positions(0)
         cls.system_pmd.box_vectors = packmol_out.openmm_boxes(0)
         try:
-            shutil.rmtree(cls.pdb_filename)
-            del cls.ligand_pmd, cls.pdb_filename
+            shutil.rmtree("/".join(cls.pdb_filename.split("/")[:-1]))
+            del cls.ligand_pmd
         except Exception as e:
             print("Error due to : {}".format(e))
 
@@ -434,7 +434,7 @@ class SolutionParameteriser(BaseParameteriser):
     # default_padding = 1.25 #nm
 
     @classmethod
-    def via_openeye(cls, smiles, allow_undefined_stereo = False, default_padding = 1.25*unit.nanometer, **kwargs):
+    def run(cls, smiles, *, solvent_smiles = None, allow_undefined_stereo = False, num_solvent = 100, density = None, default_padding = 1.25*unit.nanometer, box_scaleup_factor = 1.5, backend = "openeye", **kwargs):
         """
         Parameterisation perfromed via openeye.
 
@@ -442,10 +442,20 @@ class SolutionParameteriser(BaseParameteriser):
         --------------------
         smiles : str
             SMILES string of the solute molecule
+        solvent_smiles : str
+            SMILES string of the solvent molecule, default is None, only relevant if the solute is not water.
         allow_undefined_stereo : bool
             Flag passed to OpenForceField `Molecule` object during parameterisation. When set to False an error is returned if SMILES have no/ambiguous steroechemistry. Default to False here as a sanity check for user.
+        num_solvent : int
+            The number of solvent molecules added into the system, only relevant if the solvent is not water. The default value is 100, but it is left for the user to determine the number of solvent molecule really needed to surrond the solute and create a big enough system.
+        density : simtk.unit
+            Density of the solvent, default is None, only relevant if the solvent is not water
         default_padding : simtk.unit
-            Dictates amount of water surronding the solute. Default is 1.25 nanometers
+            Dictates amount of water surronding the solute. Default is 1.25 nanometers, only relevant if water is the solvent.
+        box_scaleup_factor : float
+            Dicatates the packed volume with respect to the volume estimated from density. Default is 1.5, only relevant if the solvent is not water
+        backend : str:
+            Either `rdkit` or `openeye`
 
         Returns
         ------------------
@@ -453,42 +463,75 @@ class SolutionParameteriser(BaseParameteriser):
             The parameterised system as parmed object
         """
         #TODO currently only supports one solute molecule
-        cls.allow_undefined_stereo = allow_undefined_stereo
-        mol = cls._openeye_setter(smiles, **kwargs)
-        # mol = cls._openeye_charger(mol)
-        cls._openeye_parameteriser(mol, **kwargs)
-        cls.default_padding = default_padding.value_in_unit(unit.nanometer)
 
-        return cls._via_helper(**kwargs)
+        #sanity checks
+        cls.allow_undefined_stereo = allow_undefined_stereo
+        cls.default_padding = default_padding.value_in_unit(unit.nanometer)
+        cls.solvent_smiles = solvent_smiles
+        cls.box_scaleup_factor = box_scaleup_factor
+        cls.backend = backend
+        if solvent_smiles is not None and density is None:
+            raise ValueError("Density missing for the solvent {}".format(solvent_smiles))
+        if density is not None:
+            if type(density) is not unit.quantity.Quantity:
+                raise ValueError("density needs to have unit")
+            if solvent_smiles is None:
+                raise ValueError("Solvent SMILES missing.")
+        if backend is not "openeye" and backend is not "rdkit":
+            raise ValueError("backend should be either 'openeye' or 'rdkit'")
+        
+
+        if backend is "openeye":
+            mol = cls._openeye_setter(smiles, **kwargs)
+            # mol = cls._openeye_charger(mol)
+            cls.pdb_filename, cls.ligand_pmd = cls._openeye_parameteriser(mol, **kwargs)
+            if solvent_smiles:
+                cls.solvent_smiles = cls.solvent_smiles
+                mol = cls._openeye_setter(solvent_smiles, **kwargs)
+                cls.solvent_pdb_filename, cls.solvent_pmd = cls._openeye_parameteriser(mol, **kwargs)
+
+        elif backend is "rdkit":
+            mol = cls._rdkit_setter(smiles, **kwargs)
+            # mol = cls._rdkit_charger(mol)
+            cls.pdb_filename, cls.ligand_pmd = cls._rdkit_parameteriser(mol, **kwargs)
+            if solvent_smiles:
+                cls.solvent_smiles = cls.solvent_smiles
+                mol = cls._rdkit_setter(solvent_smiles, **kwargs)
+                cls.solvent_pdb_filename, cls.solvent_pmd = cls._rdkit_parameteriser(mol, **kwargs)
+        
+        if solvent_smiles is None:
+            return cls._via_helper_water(**kwargs)
+        else:
+            return cls._via_helper_other_solvent(density, num_solvent,**kwargs)
 
     @classmethod
-    def via_rdkit(cls, smiles, allow_undefined_stereo = False, default_padding = 1.25*unit.nanometer, **kwargs):
-        """
-        Parameterisation perfromed via openeye.
+    def _via_helper_other_solvent(cls, density, num_solvent, **kwargs):
+        from openmoltools import packmol
+        density = density.value_in_unit(unit.gram / unit.milliliter)
 
-        Parameters
-        --------------------
-        smiles : str
-            SMILES string of the solute molecule
-        allow_undefined_stereo : bool
-            Flag passed to OpenForceField `Molecule` object during parameterisation. When set to False an error is returned if SMILES have no/ambiguous steroechemistry. Default to False here as a sanity check for user.
-        default_padding : simtk.unit
-            Dictates amount of water surronding the solute. Default is 1.25 nanometers
+        if cls.backend == "openeye":
+            box_size = packmol.approximate_volume_by_density([cls.smiles, cls.solvent_smiles], [1, num_solvent], density=density, 		box_scaleup_factor= cls.box_scaleup_factor, box_buffer= cls.default_padding)
+        else:
+            box_size = approximate_volume_by_density([cls.smiles, cls.solvent_smiles], [1, num_solvent], density=density, 		box_scaleup_factor = cls.box_scaleup_factor, box_buffer= cls.default_padding)
 
-        Returns
-        ------------------
-        system_pmd : parmed.structure
-            The parameterised system as parmed object
-        """
-        cls.allow_undefined_stereo = allow_undefined_stereo
-        mol = cls._rdkit_setter(smiles, **kwargs)
-        # mol = cls._rdkit_charger(mol)
-        cls._rdkit_parameteriser(mol, **kwargs)
-        cls.default_padding = default_padding.value_in_unit(unit.nanometer)
-        return cls._via_helper(**kwargs)
+        packmol_out = packmol.pack_box([cls.pdb_filename, cls.solvent_pdb_filename], [1, num_solvent], box_size = box_size)
+        import mdtraj as md
+
+        cls.system_pmd = cls.ligand_pmd + (cls.solvent_pmd * num_solvent)
+        cls.system_pmd.positions = packmol_out.openmm_positions(0)
+        cls.system_pmd.box_vectors = packmol_out.openmm_boxes(0)
+        try:
+            shutil.rmtree("/".join(cls.pdb_filename.split("/")[:-1])) #TODO should maybe delete the higher parent level? i.e. -2?
+            shutil.rmtree("/".join(cls.solvent_pdb_filename.split("/")[:-1]))
+            del cls.ligand_pmd, cls.solvent_pmd
+        except Exception as e:
+            print("Error due to : {}".format(e))
+
+        cls.system_pmd.title = cls.smiles
+        return cls.system_pmd
 
     @classmethod
-    def _via_helper(cls, **kwargs):
+    def _via_helper_water(cls, **kwargs):
         """
         Helper function for via_rdkit or via_openeye
 
@@ -521,16 +564,16 @@ class SolutionParameteriser(BaseParameteriser):
         cls.system_pmd.box_vectors = complex.box_vectors
 
         try:
-            shutil.rmtree(cls.pdb_filename)
-            del cls.ligand_pmd, cls.pdb_filename
+            shutil.rmtree("/".join(cls.pdb_filename.split("/")[:-1]))
+            del cls.ligand_pmd
         except:
             pass
 
         cls.system_pmd.title = cls.smiles
         return cls.system_pmd
 
-
-    run = via_openeye
+    via_openeye = partialmethod(run, backend = "openeye")
+    via_rdkit = partialmethod(run, backend = "rdkit")
 
 class VaccumParameteriser(BaseParameteriser):
     @classmethod
@@ -554,7 +597,7 @@ class VaccumParameteriser(BaseParameteriser):
         cls.allow_undefined_stereo = allow_undefined_stereo
         mol = cls._openeye_setter(smiles, **kwargs)
         # mol = cls._openeye_charger(mol)
-        cls._openeye_parameteriser(mol, **kwargs)
+        cls.pdb_filename, cls.ligand_pmd = cls._openeye_parameteriser(mol, **kwargs)
 
         cls.system_pmd = cls.ligand_pmd
 
@@ -582,7 +625,7 @@ class VaccumParameteriser(BaseParameteriser):
         cls.allow_undefined_stereo = allow_undefined_stereo
         mol = cls._rdkit_setter(smiles, **kwargs)
         # mol = cls._rdkit_charger(mol)
-        cls._rdkit_parameteriser(mol, **kwargs)
+        cls.pdb_filename, cls.ligand_pmd = cls._rdkit_parameteriser(mol, **kwargs)
 
         cls.system_pmd = cls.ligand_pmd
 
