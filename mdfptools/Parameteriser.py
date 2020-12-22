@@ -104,6 +104,15 @@ class BaseParameteriser():
     """
 
     @classmethod
+    def _get_forcefield(cls, **kwargs):
+        try:
+            forcefield = ForceField(kwargs['ff_path'])
+        except Exception as e:
+            print("Specified forcefield cannot be found. Fallback to default forcefield")
+            forcefield = ForceField('test_forcefields/smirnoff99Frosst.offxml')
+        return forcefield
+
+    @classmethod
     def _rdkit_parameteriser(cls, mol, **kwargs):
         from rdkit import Chem
         from openforcefield.utils.toolkits import RDKitToolkitWrapper, ToolkitRegistry
@@ -117,7 +126,7 @@ class BaseParameteriser():
         """
 
         try:
-            forcefield = ForceField('test_forcefields/smirnoff99Frosst.offxml')
+            forcefield = cls._get_forcefield(**kwargs)
             molecule = Molecule.from_rdkit(mol, allow_undefined_stereo = cls.allow_undefined_stereo)
             if hasattr(cls, "_ddec_charger"):
                 molecule.partial_charges = unit.Quantity(np.array(cls._ddec_charger(mol, cls.rf)), unit.elementary_charge)
@@ -253,7 +262,7 @@ class BaseParameteriser():
         mol : oechem.OEMol
         """
         try:
-            forcefield = ForceField('test_forcefields/smirnoff99Frosst.offxml')
+            forcefield = cls._get_forcefield(**kwargs)
             molecule = Molecule.from_openeye(mol, allow_undefined_stereo = cls.allow_undefined_stereo)
             from openforcefield.utils.toolkits import OpenEyeToolkitWrapper
             molecule.compute_partial_charges_am1bcc(toolkit_registry = OpenEyeToolkitWrapper())
