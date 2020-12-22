@@ -105,12 +105,12 @@ class BaseParameteriser():
 
     @classmethod
     def _get_forcefield(cls, **kwargs):
-        try:
-            forcefield = ForceField(kwargs['ff_path'])
-        except Exception as e:
-            print("Specified forcefield cannot be found. Fallback to default forcefield")
-            forcefield = ForceField('test_forcefields/smirnoff99Frosst.offxml')
-        return forcefield
+        if "ff_path" not in kwargs:
+            try:
+                return ForceField(kwargs['ff_path'])
+            except Exception as e:
+                print("Specified forcefield cannot be found. Fallback to default forcefield")
+        return ForceField('test_forcefields/smirnoff99Frosst.offxml')
 
     @classmethod
     def _rdkit_parameteriser(cls, mol, **kwargs):
