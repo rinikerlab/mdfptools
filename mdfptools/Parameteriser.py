@@ -105,7 +105,7 @@ class BaseParameteriser():
 
     @classmethod
     def _get_forcefield(cls, **kwargs):
-        if "ff_path" not in kwargs:
+        if "ff_path" in kwargs:
             try:
                 return ForceField(kwargs['ff_path'])
             except Exception as e:
