@@ -107,7 +107,7 @@ class BaseParameteriser():
     def _get_forcefield(cls, **kwargs):
         if "ff_path" in kwargs:
             try:
-                return ForceField(kwargs['ff_path'])
+                return ForceField(kwargs['ff_path'], allow_cosmetic_attributes = True)
             except Exception as e:
                 print("Specified forcefield cannot be found. Fallback to default forcefield")
         return ForceField('test_forcefields/smirnoff99Frosst.offxml')
