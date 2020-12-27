@@ -144,12 +144,11 @@ class BaseParameteriser():
         forcefield = cls._get_forcefield(**kwargs)
         topology = Topology.from_molecules(molecule)
         openmm_system = forcefield.create_openmm_system(topology, charge_from_molecules= [molecule])
-        ligand_pmd = parmed.openmm.topsystem.load_topology(topology.to_openmm(), openmm_system, molecule._conformers[0])
 
         # ligand_pmd.title = cls.smiles
 
-        for i in ligand_pmd.residues:
-            i.name = 'LIG' #FIXME need to refine to allow multi-residue ligand
+        # for i in ligand_pmd.residues:
+        #     i.name = 'LIG' #FIXME need to refine to allow multi-residue ligand
 
         tmp_dir = tempfile.mkdtemp()
         # We need all molecules as both pdb files (as packmol input)
@@ -160,7 +159,12 @@ class BaseParameteriser():
         # from openeye import oechem # OpenEye Python toolkits
         # oechem.OEWriteMolecule( oechem.oemolostream( pdb_filename ), mol)
 
-        ligand_pmd.save(pdb_filename, overwrite=True)
+        # ligand_pmd.save(pdb_filename, overwrite=True)
+        molecule.to_file(pdb_filename, "pdb")
+        from simtk.openmm.app import PDBFile
+        omm_top = PDBFile(pdb_filename).topology
+        # ligand_pmd = parmed.openmm.topsystem.load_topology(topology.to_openmm(), openmm_system, molecule._conformers[0]) #XXX off topology does not keep atom names and resnames, use omm topology instead
+        ligand_pmd = parmed.openmm.topsystem.load_topology(omm_top, openmm_system, molecule._conformers[0])
         return pdb_filename, ligand_pmd
 
     @classmethod
@@ -469,6 +473,7 @@ class SolutionParameteriser(BaseParameteriser):
         #TODO currently only supports one solute molecule
 
         #sanity checks
+        cls.smiles = smiles
         cls.allow_undefined_stereo = allow_undefined_stereo
         cls.default_padding = default_padding.value_in_unit(unit.nanometer)
         cls.solvent_smiles = solvent_smiles
@@ -481,8 +486,8 @@ class SolutionParameteriser(BaseParameteriser):
                 raise ValueError("density needs to have unit")
             if solvent_smiles is None:
                 raise ValueError("Solvent SMILES missing.")
-        if backend is not "openeye" and backend is not "rdkit":
-            raise ValueError("backend should be either 'openeye' or 'rdkit'")
+        if backend not in ["openeye", "rdkit", "off_molecule"]:
+             raise ValueError("backend should be either 'openeye' or 'rdkit'") #XXX allow more options
         
 
         if backend is "openeye":
@@ -490,7 +495,6 @@ class SolutionParameteriser(BaseParameteriser):
             # mol = cls._openeye_charger(mol)
             cls.pdb_filename, cls.ligand_pmd = cls._openeye_parameteriser(mol, **kwargs)
             if solvent_smiles:
-                cls.solvent_smiles = cls.solvent_smiles
                 mol = cls._openeye_setter(solvent_smiles, **kwargs)
                 cls.solvent_pdb_filename, cls.solvent_pmd = cls._openeye_parameteriser(mol, **kwargs)
 
@@ -499,9 +503,13 @@ class SolutionParameteriser(BaseParameteriser):
             # mol = cls._rdkit_charger(mol)
             cls.pdb_filename, cls.ligand_pmd = cls._rdkit_parameteriser(mol, **kwargs)
             if solvent_smiles:
-                cls.solvent_smiles = cls.solvent_smiles
                 mol = cls._rdkit_setter(solvent_smiles, **kwargs)
                 cls.solvent_pdb_filename, cls.solvent_pmd = cls._rdkit_parameteriser(mol, **kwargs)
+        elif backend in ["off_molecule"]:
+            if "solute_molecule" in kwargs and type(kwargs["solute_molecule"]) is Molecule:
+                cls.pdb_filename, cls.ligand_pmd = cls._off_handler(kwargs["solute_molecule"], **kwargs)
+            if "solvent_molecule" in kwargs and type(kwargs["solvent_molecule"]) is Molecule:
+                cls.solvent_pdb_filename, cls.solvent_pmd = cls._off_handler(kwargs["solvent_molecule"], **kwargs)
         
         if solvent_smiles is None:
             return cls._via_helper_water(**kwargs)
