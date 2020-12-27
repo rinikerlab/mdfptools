@@ -148,20 +148,21 @@ class BaseParameteriser():
         # ligand_pmd.title = cls.smiles
 
         # for i in ligand_pmd.residues:
-        #     i.name = 'LIG' #FIXME need to refine to allow multi-residue ligand
+        #     i.name = 'LIG' #XXX no longer needed when using omm_top to create parmed structure
 
         tmp_dir = tempfile.mkdtemp()
         # We need all molecules as both pdb files (as packmol input)
         # and mdtraj.Trajectory for restoring bonds later.
         pdb_filename = tempfile.mktemp(suffix=".pdb", dir=tmp_dir)
 
+        #XXX legacy code for save a pdb copy for simulation box creation
         # Chem.MolToPDBFile(mol, pdb_filename)
         # from openeye import oechem # OpenEye Python toolkits
         # oechem.OEWriteMolecule( oechem.oemolostream( pdb_filename ), mol)
 
+        #XXX swtich to off save pdb
         # ligand_pmd.save(pdb_filename, overwrite=True)
         molecule.to_file(pdb_filename, "pdb")
-        from simtk.openmm.app import PDBFile
         omm_top = PDBFile(pdb_filename).topology
         # ligand_pmd = parmed.openmm.topsystem.load_topology(topology.to_openmm(), openmm_system, molecule._conformers[0]) #XXX off topology does not keep atom names and resnames, use omm topology instead
         ligand_pmd = parmed.openmm.topsystem.load_topology(omm_top, openmm_system, molecule._conformers[0])
