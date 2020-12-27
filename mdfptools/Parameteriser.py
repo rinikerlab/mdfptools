@@ -1,5 +1,6 @@
 import tempfile
 from functools import partialmethod
+from networkx.generators.small import moebius_kantor_graph
 
 # import contextlib
 
@@ -124,9 +125,7 @@ class BaseParameteriser():
         ----------
         mol : rdkit.Chem.Mol
         """
-
         try:
-            forcefield = cls._get_forcefield(**kwargs)
             molecule = Molecule.from_rdkit(mol, allow_undefined_stereo = cls.allow_undefined_stereo)
             if hasattr(cls, "_ddec_charger"):
                 molecule.partial_charges = unit.Quantity(np.array(cls._ddec_charger(mol, cls.rf)), unit.elementary_charge)
@@ -134,23 +133,34 @@ class BaseParameteriser():
                 from openforcefield.utils.toolkits import AmberToolsToolkitWrapper
                 molecule.compute_partial_charges_am1bcc(toolkit_registry = AmberToolsToolkitWrapper())
 
-            topology = Topology.from_molecules(molecule)
-            openmm_system = forcefield.create_openmm_system(topology, charge_from_molecules= [molecule])
-
-            ligand_pmd = parmed.openmm.topsystem.load_topology(topology.to_openmm(), openmm_system, molecule._conformers[0])
         except Exception as e:
-            raise ValueError("Parameterisation Failed : {}".format(e)) #TODO
+            raise ValueError("Charging Failed : {}".format(e)) #TODO
+
+        return cls._off_handler(molecule, **kwargs)
+
+
+    @classmethod
+    def _off_handler(cls, molecule, **kwargs):
+        forcefield = cls._get_forcefield(**kwargs)
+        topology = Topology.from_molecules(molecule)
+        openmm_system = forcefield.create_openmm_system(topology, charge_from_molecules= [molecule])
+        ligand_pmd = parmed.openmm.topsystem.load_topology(topology.to_openmm(), openmm_system, molecule._conformers[0])
 
         # ligand_pmd.title = cls.smiles
 
         for i in ligand_pmd.residues:
-            i.name = 'LIG'
+            i.name = 'LIG' #FIXME need to refine to allow multi-residue ligand
 
         tmp_dir = tempfile.mkdtemp()
         # We need all molecules as both pdb files (as packmol input)
         # and mdtraj.Trajectory for restoring bonds later.
         pdb_filename = tempfile.mktemp(suffix=".pdb", dir=tmp_dir)
-        Chem.MolToPDBFile(mol, pdb_filename)
+
+        # Chem.MolToPDBFile(mol, pdb_filename)
+        # from openeye import oechem # OpenEye Python toolkits
+        # oechem.OEWriteMolecule( oechem.oemolostream( pdb_filename ), mol)
+
+        ligand_pmd.save(pdb_filename, overwrite=True)
         return pdb_filename, ligand_pmd
 
     @classmethod
@@ -262,30 +272,15 @@ class BaseParameteriser():
         mol : oechem.OEMol
         """
         try:
-            forcefield = cls._get_forcefield(**kwargs)
             molecule = Molecule.from_openeye(mol, allow_undefined_stereo = cls.allow_undefined_stereo)
             from openforcefield.utils.toolkits import OpenEyeToolkitWrapper
             molecule.compute_partial_charges_am1bcc(toolkit_registry = OpenEyeToolkitWrapper())
 
-            topology = Topology.from_molecules(molecule)
-            openmm_system = forcefield.create_openmm_system(topology, charge_from_molecules= [molecule])
-
-            ligand_pmd = parmed.openmm.topsystem.load_topology(topology.to_openmm(), openmm_system, molecule._conformers[0])
         except Exception as e:
-            raise ValueError("Parameterisation Failed : {}".format(e)) #TODO
+            raise ValueError("Charging Failed : {}".format(e)) #TODO
 
-        # ligand_pmd.title = cls.smiles
+        return cls._off_handler(molecule, **kwargs)
 
-        for i in ligand_pmd.residues:
-            i.name = 'LIG'
-
-        tmp_dir = tempfile.mkdtemp()
-        # We need all molecules as both pdb files (as packmol input)
-        # and mdtraj.Trajectory for restoring bonds later.
-        pdb_filename = tempfile.mktemp(suffix=".pdb", dir=tmp_dir)
-        from openeye import oechem # OpenEye Python toolkits
-        oechem.OEWriteMolecule( oechem.oemolostream( pdb_filename ), mol)
-        return pdb_filename, ligand_pmd
 
     @classmethod
     def save(cls, file_name, file_path = "./", **kwargs):
