@@ -41,7 +41,7 @@ class BaseExtractor():
         raise NotImplementedError
 
     @classmethod
-    def _get_all_exception_atom_pairs(cls, system, topology):
+    def _get_all_exception_atom_pairs(cls, system, topology, parmed_obj):
         """
         Abstract method
         """
@@ -74,7 +74,7 @@ class BaseExtractor():
             # topology = parm.topology #XXX here I made the change
             topology = mdtraj_obj.topology
             solute_atoms, solvent_atoms = cls._solute_solvent_split(topology, **kwargs)
-            solute_1_4_pairs, solvent_1_4_pairs, solute_excluded_pairs, solvent_excluded_pairs, solute_self_pairs, solvent_self_pairs = cls._get_all_exception_atom_pairs(system, topology)
+            solute_1_4_pairs, solvent_1_4_pairs, solute_excluded_pairs, solvent_excluded_pairs, solute_self_pairs, solvent_self_pairs = cls._get_all_exception_atom_pairs(system, topology, parmed_obj)
 
 
 
@@ -916,7 +916,7 @@ class SolutionExtractor(BaseExtractor):
 
 
     @classmethod
-    def _get_all_exception_atom_pairs(cls, system, topology):
+    def _get_all_exception_atom_pairs(cls, system, topology, parmed_obj):
         """
         Using the parametersied system to obtain the exception and exclusion pairs, used in :func:`~BaseExtractor._extract_energies_helper`. This is inferred purely from the parameterised system and connectivity.
 
@@ -925,6 +925,7 @@ class SolutionExtractor(BaseExtractor):
         -----------
         system : OpenMM.System
         topology : mdtraj.topology
+        parmed_obj : parmed.structure
 
         Returns
         ------------
@@ -944,7 +945,8 @@ class SolutionExtractor(BaseExtractor):
         solute_idx, solvent_idx = cls._solute_solvent_split(topology)
 
         #python3, for python2 use  set((b[0].index, b[1].index) if b[0].index < b[1].index else (b[1].index, b[0].index) for b in topology.bonds())
-        bonded_pairs =  {(b[0].index, b[1].index) if b[0].index < b[1].index else (b[1].index, b[0].index) for b in topology.bonds}
+        # bonded_pairs =  {(b[0].index, b[1].index) if b[0].index < b[1].index else (b[1].index, b[0].index) for b in topology.bonds} #XXX some file strucuture for trajectory does not store connectivity!
+        bonded_pairs ={(b.atom1.idx, b.atom2.idx) if b.atom1.idx < b.atom2.idx else (b.atom1.idx, b.atom2.idx) for b in parmed_obj.bonds}
         angle_ends = set()
         for i in range(angleForce.getNumAngles()):
             particle1,particle2,particle3, *rest = angleForce.getAngleParameters(i)
@@ -1150,7 +1152,7 @@ class LiquidExtractor(BaseExtractor):
         return solute_atoms, solvent_atoms
 
     @classmethod
-    def _get_all_exception_atom_pairs(cls, system, topology):
+    def _get_all_exception_atom_pairs(cls, system, topology, parmed_obj):
         """
         Using the parametersied system to obtain the exception and exclusion pairs, used in :func:`~BaseExtractor._extract_energies_helper`. This is inferred purely from the parameterised system and connectivity.
 
@@ -1159,6 +1161,7 @@ class LiquidExtractor(BaseExtractor):
         -----------
         system : OpenMM.System
         topology : mdtraj.topology
+        parmed_obj : parmed.structure
 
         Returns
         ------------
@@ -1179,7 +1182,8 @@ class LiquidExtractor(BaseExtractor):
         solute_idx, solvent_idx = cls._solute_solvent_split(topology)
 
         #python3, for python2 use  set((b[0].index, b[1].index) if b[0].index < b[1].index else (b[1].index, b[0].index) for b in topology.bonds())
-        bonded_pairs =  {(b[0].index, b[1].index) if b[0].index < b[1].index else (b[1].index, b[0].index) for b in topology.bonds}
+        # bonded_pairs =  {(b[0].index, b[1].index) if b[0].index < b[1].index else (b[1].index, b[0].index) for b in topology.bonds} #XXX some trajectory format does not store connectivity information!
+        bonded_pairs ={(b.atom1.idx, b.atom2.idx) if b.atom1.idx < b.atom2.idx else (b.atom1.idx, b.atom2.idx) for b in parmed_obj.bonds}
         angle_ends = set()
         for i in range(angleForce.getNumAngles()):
             particle1,particle2,particle3, *rest = angleForce.getAngleParameters(i)

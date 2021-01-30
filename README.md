@@ -12,10 +12,22 @@ This toolkit is described and applied to the [SAMPL6 logP prediction challenge](
 Visit our [documentation](https://mdfptools.readthedocs.io/en/latest/) to learn details about [installation](https://mdfptools.readthedocs.io/en/latest/install.html), [example workflow](https://mdfptools.readthedocs.io/en/latest/tutorial.html) and [API references](https://mdfptools.readthedocs.io/en/latest/parameterisers.html).
 
 
+The openeye entry is the basic version. The rdkit handler version allow more customisation, e.g. specifying custom conformer for the molecule
 
 ### Citations
 Bibtex citations for the toolkit and the method are as follows:
 ```
+@article{esposito2020combining,
+  title={Combining Machine Learning and Molecular Dynamics to Predict P-Glycoprotein Substrates},
+  author={Esposito, Carmen and Wang, Shuzhe and Lange, Udo EW and Oellien, Frank and Riniker, Sereina},
+  journal={Journal of Chemical Information and Modeling},
+  volume={60},
+  number={10},
+  pages={4730--4749},
+  year={2020},
+  journal = {Journal of Chemical Information and Modeling}
+}
+
 @article{Wang2019,
   doi = {10.1007/s10822-019-00252-6},
   url = {https://doi.org/10.1007/s10822-019-00252-6},
@@ -44,7 +56,7 @@ Bibtex citations for the toolkit and the method are as follows:
 
 ### Copyright
 
-Copyright (c) 2018, shuzhe Wang
+Copyright (c) 2018, Shuzhe Wang, Carmen Esposito
 
 
 #### Acknowledgements
