@@ -1,3 +1,4 @@
+import pandas as pd
 import sys
 from rdkit import Chem
 from rdkit.Chem import SaltRemover, AllChem, Draw
@@ -164,3 +165,43 @@ def approximate_volume_by_density(smiles_strings, n_molecules_list, density=1.0,
     box_size = edge*box_scaleup_factor/units.angstroms + box_buffer
 
     return box_size
+
+
+def mdp2df(mdp_file_path):
+    key, val, comment = [], [] ,[]
+    with open(mdp_file_path, "r") as f:
+        lines = f.readlines()
+    for line in lines:
+        line = line.strip()
+        if len(line.split("=")) == 2:
+            k,v = line.split("=")
+            k = k.strip()
+            key.append(k)
+            if len(v.split(";")) > 1:
+                v,c = v.split(";")
+                v = v.strip()
+                c = c.strip()
+                val.append(v)
+                comment.append(c)
+            else:
+                v = v.strip()
+                val.append(v)
+                comment.append("")
+        else:
+            key.append("")
+            val.append("")
+            comment.append(line.split(";")[-1].strip())
+
+    return pd.DataFrame.from_dict({
+        "key" : key,
+        "val" : val,
+        "comment" : comment,
+    })
+
+def df2dict(df):
+    return {val.key : val.val for idx, val in df[(df.key != "") &  (~df.key.str.startswith(";"))].iterrows()}
+
+
+def mdp2dict(mdp_file_path):
+    return df2dict(mdp2df(mdp_file_path))
+
