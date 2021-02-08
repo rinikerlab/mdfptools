@@ -7,7 +7,7 @@ dt		= 0.002			; 2 fs
 nstxout		= 0			; save coordinates every 10 ps
 nstvout		= 0			; save velocities every 10 ps
 nstenergy	= 0			; save energies every 10 ps
-nstlog		= 0			; update log file every 10 ps
+nstlog		= 500			; update log file every 10 ps
 nstxtcout       = 25000
 ; Bond parameters
 continuation	= no			; Restarting after NVT 

@@ -9,7 +9,7 @@ nsteps		= 50000	  	; Maximum number of (minimization) steps to perform
 nstxout		= 0			; save coordinates every 10 ps
 nstvout		= 0			; save velocities every 10 ps
 nstenergy	= 0			; save energies every 10 ps
-nstlog		= 0			; update log file every 10 ps
+nstlog		= 500			; update log file every 10 ps
 ; Parameters describing how to find the neighbors of each atom and how to calculate the interactions
 nstlist		= 1		    ; Frequency to update the neighbor list and long range forces
 ns_type		= grid		; Method to determine neighbor list (simple, grid)
