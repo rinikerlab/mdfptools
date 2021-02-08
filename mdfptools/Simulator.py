@@ -141,6 +141,9 @@ class BaseSimulator():
         from biobb_md.gromacs.mdrun import mdrun
         from biobb_md.gromacs.grompp import grompp
         from biobb_common.tools.file_utils import zip_top
+        
+
+        assert tmp_dir is None or os.path.realpath(file_path) != os.path.realpath(tmp_dir), "Simulation results will not be stored in a temporary directory"
 
         if debug:
             import shutil
@@ -149,13 +152,13 @@ class BaseSimulator():
                 shutil.rmtree(tmp_dir)
             os.mkdir(tmp_dir)
         elif tmp_dir is None:
-            tmp_dir = tempfile.mkdtemp() #FIXME just change this to debug dir in dubug mode
+            tmp_dir = tempfile.mkdtemp(dir = file_path) #FIXME just change this to debug dir in dubug mode
         else:
             try:
                 os.mkdir(tmp_dir)
             except:
                 raise ValueError("Cannot create an empty temporary directory for storing intermediate files")
-
+        
         parmed_obj.residues[0].name = "LIG"
         parmed_obj = parmed.gromacs.gromacstop.GromacsTopologyFile().from_structure(parmed_obj)
 
