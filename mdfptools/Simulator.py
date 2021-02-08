@@ -110,7 +110,7 @@ class BaseSimulator():
         return os.path.abspath(path)
 
     @classmethod
-    def via_gromacs(cls, parmed_obj, file_name, file_path = "./", num_steps = 5000 * 500, write_out_freq = 5000, num_threads = 1, minimisation_mdp = None, equilibration_mdp = None, production_mdp = None, report_equilibration = False, report_production = False, debug = False, **kwargs): #TODO infer threads based on system size
+    def via_gromacs(cls, parmed_obj, file_name, file_path = "./", num_steps = 5000 * 500, write_out_freq = 5000, num_threads = 1, minimisation_mdp = None, equilibration_mdp = None, production_mdp = None, tmp_dir = None, report_equilibration = False, report_production = False, debug = False, **kwargs): #TODO infer threads based on system size
         """
         Simulation via GROMACS will be added in the future.
 
@@ -142,7 +142,19 @@ class BaseSimulator():
         from biobb_md.gromacs.grompp import grompp
         from biobb_common.tools.file_utils import zip_top
 
-        tmp_dir = tempfile.mkdtemp()
+        if debug:
+            import shutil
+            tmp_dir = "{}/.debug/".format(file_path)
+            if os.path.isdir(tmp_dir):
+                shutil.rmtree(tmp_dir)
+            os.mkdir(tmp_dir)
+        elif tmp_dir is None:
+            tmp_dir = tempfile.mkdtemp() #FIXME just change this to debug dir in dubug mode
+        else:
+            try:
+                os.mkdir(tmp_dir)
+            except:
+                raise ValueError("Cannot create an empty temporary directory for storing intermediate files")
 
         parmed_obj.residues[0].name = "LIG"
         parmed_obj = parmed.gromacs.gromacstop.GromacsTopologyFile().from_structure(parmed_obj)
@@ -283,12 +295,9 @@ class BaseSimulator():
         )
         # gro_file = next_gro_file
 
-        if debug:
+        if debug is not True and tmp_dir is not None:
             import shutil
-            if os.path.isdir("{}/debug/".format(file_path)):
-                shutil.rmtree("{}/debug/".format(file_path))
-            # os.mkdir("{}/debug/".format(file_path))
-            shutil.copytree(tmp_dir, file_path + "/debug/")
+            shutil.rmtree(tmp_dir)
         return os.path.abspath(xtc_file)
 
     run = via_openmm
