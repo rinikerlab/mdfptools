@@ -110,7 +110,7 @@ class BaseSimulator():
         return os.path.abspath(path)
 
     @classmethod
-    def via_gromacs(cls, parmed_obj, file_name, file_path = "./", num_steps = 5000 * 500, write_out_freq = 5000, num_threads = 1, minimisation_mdp = None, equilibration_mdp = None, production_mdp = None, tmp_dir = None, report_equilibration = False, report_production = False, debug = False, **kwargs): #TODO infer threads based on system size
+    def via_gromacs(cls, parmed_obj, file_name, file_path = "./", num_steps = 5000 * 500, write_out_freq = 5000, num_threads = 1, minimisation_mdp = None, equilibration_mdp = None, production_mdp = None, tmp_dir = None, report_equilibration = False, report_production = False, debug = False, stages = ["minimisation", "equilibration", "production"], **kwargs): #TODO infer threads based on system size
         """
         Simulation via GROMACS will be added in the future.
 
@@ -201,102 +201,108 @@ class BaseSimulator():
 
         ####################################################
 
-        zip_top(topzip_file, top_file) #FIXME
+        zip_top(topzip_file, top_file)
 
         stage = "minimisation"
-        mdp_dict = mdp2dict(get_data_filename("{}.mdp".format(stage)))
-        if eval("{}_mdp".format(stage)) is not None:
-            mdp_dict.update(eval("{}_mdp".format(stage)))
-        next_gro_file = "{}/{}.gro".format(tmp_dir, stage)
+        if stage in stages:
+            mdp_dict = mdp2dict(get_data_filename("{}.mdp".format(stage)))
+            if eval("{}_mdp".format(stage)) is not None:
+                mdp_dict.update(eval("{}_mdp".format(stage)))
+            next_gro_file = "{}/{}.gro".format(tmp_dir, stage)
 
-        # grompp_mdrun(input_gro_path = gro_file,
-        #     input_ndx_path = index_file,
-        #     input_top_zip_path= topzip_file,
-        #     # input_mdp_path = "{}.mdp".format(stage),
-        #     output_trr_path = "{}/{}.trr".format(tmp_dir, stage),
-        #     output_gro_path = next_gro_file,
-        #     output_edr_path = "{}/{}.edr".format(tmp_dir, stage),
-        #     output_log_path = "{}/{}.log".format(tmp_dir, stage),
-        #     output_xtc_path = "{}/{}.xtc".format(tmp_dir, stage),
-        #     num_threads_omp = num_threads,
-        #     properties = {
-        #         "mdp" : mdp_dict
-        #         }
-        #     )
-        grompp(input_gro_path = gro_file,
-            input_ndx_path = index_file,
-            input_top_zip_path= topzip_file,
-            output_tpr_path = "{}/{}.tpr".format(tmp_dir, stage),
-            # input_mdp_path = "{}.mdp".format(stage),
-            properties = {
-                "mdp" : mdp_dict
-                }
+            # grompp_mdrun(input_gro_path = gro_file,
+            #     input_ndx_path = index_file,
+            #     input_top_zip_path= topzip_file,
+            #     # input_mdp_path = "{}.mdp".format(stage),
+            #     output_trr_path = "{}/{}.trr".format(tmp_dir, stage),
+            #     output_gro_path = next_gro_file,
+            #     output_edr_path = "{}/{}.edr".format(tmp_dir, stage),
+            #     output_log_path = "{}/{}.log".format(tmp_dir, stage),
+            #     output_xtc_path = "{}/{}.xtc".format(tmp_dir, stage),
+            #     num_threads_omp = num_threads,
+            #     properties = {
+            #         "mdp" : mdp_dict
+            #         }
+            #     )
+            grompp(input_gro_path = gro_file,
+                input_ndx_path = index_file,
+                input_top_zip_path= topzip_file,
+                output_tpr_path = "{}/{}.tpr".format(tmp_dir, stage),
+                # input_mdp_path = "{}.mdp".format(stage),
+                properties = {
+                    "mdp" : mdp_dict
+                    }
+                )
+            mdrun(
+                input_tpr_path = "{}/{}.tpr".format(tmp_dir, stage),
+                output_trr_path = "{}/{}.trr".format(tmp_dir, stage),
+                output_gro_path = next_gro_file,
+                output_edr_path = "{}/{}.edr".format(tmp_dir, stage),
+                output_log_path = "{}/{}.log".format(tmp_dir, stage),
+                output_xtc_path = "{}/{}.xtc".format(tmp_dir, stage),
+                num_threads_omp = num_threads
+                # num_threads_omp = 1 #XXX seems for minimisation speed is very slow when multiple threads are used, especially on cluster. Maybe need better handle
             )
-        mdrun(
-            input_tpr_path = "{}/{}.tpr".format(tmp_dir, stage),
-            output_trr_path = "{}/{}.trr".format(tmp_dir, stage),
-            output_gro_path = next_gro_file,
-            output_edr_path = "{}/{}.edr".format(tmp_dir, stage),
-            output_log_path = "{}/{}.log".format(tmp_dir, stage),
-            output_xtc_path = "{}/{}.xtc".format(tmp_dir, stage),
-            num_threads_omp = 1 #XXX seems for minimisation speed is very slow when multiple threads are used, especially on cluster. Maybe need better handle
-        )
-        gro_file = next_gro_file
+            gro_file = next_gro_file
 
         ###################################################333
 
 
         stage = "equilibration"
-        mdp_dict = mdp2dict(get_data_filename("{}.mdp".format(stage)))
-        if eval("{}_mdp".format(stage)) is not None:
-            mdp_dict.update(eval("{}_mdp".format(stage)))
-        next_gro_file = "{}/{}.gro".format(tmp_dir, stage)
-        grompp(input_gro_path = gro_file,
-            input_ndx_path = index_file,
-            input_top_zip_path= topzip_file,
-            output_tpr_path = "{}/{}.tpr".format(tmp_dir, stage),
-            # input_mdp_path = "{}.mdp".format(stage),
-            properties = {
-                "mdp" : mdp_dict
-                }
+        if stage in stages:
+            mdp_dict = mdp2dict(get_data_filename("{}.mdp".format(stage)))
+            if eval("{}_mdp".format(stage)) is not None:
+                mdp_dict.update(eval("{}_mdp".format(stage)))
+            next_gro_file = "{}/{}.gro".format(tmp_dir, stage)
+            grompp(input_gro_path = gro_file,
+                input_ndx_path = index_file,
+                input_top_zip_path= topzip_file,
+                output_tpr_path = "{}/{}.tpr".format(tmp_dir, stage),
+                # input_mdp_path = "{}.mdp".format(stage),
+                properties = {
+                    "mdp" : mdp_dict
+                    }
+                )
+            mdrun(
+                input_tpr_path = "{}/{}.tpr".format(tmp_dir, stage),
+                output_trr_path = "{}/{}.trr".format(tmp_dir, stage),
+                output_gro_path = next_gro_file,
+                output_edr_path = "{}/{}.edr".format(tmp_dir, stage),
+                output_log_path = "{}/{}.log".format(tmp_dir, stage),
+                output_xtc_path = "{}/{}.xtc".format(tmp_dir, stage),
+                num_threads_omp = num_threads
             )
-        mdrun(
-            input_tpr_path = "{}/{}.tpr".format(tmp_dir, stage),
-            output_trr_path = "{}/{}.trr".format(tmp_dir, stage),
-            output_gro_path = next_gro_file,
-            output_edr_path = "{}/{}.edr".format(tmp_dir, stage),
-            output_log_path = "{}/{}.log".format(tmp_dir, stage),
-            output_xtc_path = "{}/{}.xtc".format(tmp_dir, stage),
-            num_threads_omp = num_threads
-        )
-        gro_file = next_gro_file
+            gro_file = next_gro_file
 
         ######################################################3
 
         stage = "production"
-        mdp_dict = mdp2dict(get_data_filename("{}.mdp".format(stage)))
-        if eval("{}_mdp".format(stage)) is not None:
-            mdp_dict.update(eval("{}_mdp".format(stage)))
-        next_gro_file = "{}/{}.gro".format(tmp_dir, stage)
-        grompp(input_gro_path = gro_file,
-            input_ndx_path = index_file,
-            input_top_zip_path= topzip_file,
-            output_tpr_path = "{}/{}.tpr".format(tmp_dir, stage),
-            # input_mdp_path = "{}.mdp".format(stage),
-            properties = {
-                "mdp" : mdp_dict
-                }
+        if stage in stages:
+            mdp_dict = mdp2dict(get_data_filename("{}.mdp".format(stage)))
+            if eval("{}_mdp".format(stage)) is not None:
+                mdp_dict.update(eval("{}_mdp".format(stage)))
+            next_gro_file = "{}/{}.gro".format(tmp_dir, stage)
+            grompp(input_gro_path = gro_file,
+                input_ndx_path = index_file,
+                input_top_zip_path= topzip_file,
+                output_tpr_path = "{}/{}.tpr".format(tmp_dir, stage),
+                # input_mdp_path = "{}.mdp".format(stage),
+                properties = {
+                    "mdp" : mdp_dict
+                    }
+                )
+            mdrun(
+                input_tpr_path = "{}/{}.tpr".format(tmp_dir, stage),
+                output_trr_path = "{}/{}.trr".format(tmp_dir, stage),
+                output_gro_path = next_gro_file,
+                output_edr_path = "{}/{}.edr".format(tmp_dir, stage),
+                output_log_path = "{}/{}.log".format(tmp_dir, stage),
+                output_xtc_path = xtc_file,
+                num_threads_omp = num_threads
             )
-        mdrun(
-            input_tpr_path = "{}/{}.tpr".format(tmp_dir, stage),
-            output_trr_path = "{}/{}.trr".format(tmp_dir, stage),
-            output_gro_path = next_gro_file,
-            output_edr_path = "{}/{}.edr".format(tmp_dir, stage),
-            output_log_path = "{}/{}.log".format(tmp_dir, stage),
-            output_xtc_path = xtc_file,
-            num_threads_omp = num_threads
-        )
-        # gro_file = next_gro_file
+            # gro_file = next_gro_file
+
+        ######################################################3
 
         if debug is not True and tmp_dir is not None:
             import shutil
