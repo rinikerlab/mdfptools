@@ -240,7 +240,11 @@ class BaseSimulator():
                 output_edr_path = "{}/{}.edr".format(tmp_dir, stage),
                 output_log_path = "{}/{}.log".format(tmp_dir, stage),
                 output_xtc_path = "{}/{}.xtc".format(tmp_dir, stage),
-                num_threads_omp = num_threads
+                properties = {
+                    "num_threads" : num_threads,
+                    "num_threads_omp" : num_threads,
+                    "num_threads_omp_pme" : num_threads,
+                }
                 # num_threads_omp = 1 #XXX seems for minimisation speed is very slow when multiple threads are used, especially on cluster. Maybe need better handle
             )
             gro_file = next_gro_file
@@ -270,7 +274,11 @@ class BaseSimulator():
                 output_edr_path = "{}/{}.edr".format(tmp_dir, stage),
                 output_log_path = "{}/{}.log".format(tmp_dir, stage),
                 output_xtc_path = "{}/{}.xtc".format(tmp_dir, stage),
-                num_threads_omp = num_threads
+                properties = {
+                    "num_threads" : num_threads,
+                    "num_threads_omp" : num_threads,
+                    "num_threads_omp_pme" : num_threads,
+                }
             )
             gro_file = next_gro_file
 
@@ -298,7 +306,11 @@ class BaseSimulator():
                 output_edr_path = "{}/{}.edr".format(tmp_dir, stage),
                 output_log_path = "{}/{}.log".format(tmp_dir, stage),
                 output_xtc_path = xtc_file,
-                num_threads_omp = num_threads
+                properties = {
+                    "num_threads" : num_threads,
+                    "num_threads_omp" : num_threads,
+                    "num_threads_omp_pme" : num_threads,
+                }
             )
             # gro_file = next_gro_file
 
