@@ -239,6 +239,7 @@ class BaseSimulator():
                 output_gro_path = next_gro_file,
                 output_edr_path = "{}/{}.edr".format(tmp_dir, stage),
                 output_log_path = "{}/{}.log".format(tmp_dir, stage),
+                output_cpt_path = "{}/{}.cpt".format(tmp_dir, stage),
                 output_xtc_path = "{}/{}.xtc".format(tmp_dir, stage),
                 properties = {
                     "num_threads" : num_threads,
@@ -273,6 +274,7 @@ class BaseSimulator():
                 output_gro_path = next_gro_file,
                 output_edr_path = "{}/{}.edr".format(tmp_dir, stage),
                 output_log_path = "{}/{}.log".format(tmp_dir, stage),
+                output_cpt_path = "{}/{}.cpt".format(tmp_dir, stage),
                 output_xtc_path = "{}/{}.xtc".format(tmp_dir, stage),
                 properties = {
                     "num_threads" : num_threads,
@@ -305,6 +307,7 @@ class BaseSimulator():
                 output_gro_path = next_gro_file,
                 output_edr_path = "{}/{}.edr".format(tmp_dir, stage),
                 output_log_path = "{}/{}.log".format(tmp_dir, stage),
+                output_cpt_path = "{}/{}.cpt".format(tmp_dir, stage),
                 output_xtc_path = xtc_file,
                 properties = {
                     "num_threads" : num_threads,
