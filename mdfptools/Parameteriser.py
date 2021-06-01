@@ -1,6 +1,5 @@
 import tempfile
 from functools import partialmethod
-from networkx.generators.small import moebius_kantor_graph
 
 # import contextlib
 
@@ -8,12 +7,17 @@ from simtk import unit #Unit handling for OpenMM
 from simtk.openmm import *
 from simtk.openmm.app import *
 from simtk.openmm.app import PDBFile
-# from openforcefield.utils.toolkits import RDKitToolkitWrapper, ToolkitRegistry
-from openforcefield.topology import Molecule, Topology
-from openforcefield.typing.engines.smirnoff import ForceField
+
+try:
+    from openff.toolkit.topology import Molecule, Topology
+    from openff.toolkit.typing.engines.smirnoff import ForceField
+except ModuleNotFoundError:
+    # from openforcefield.utils.toolkits import RDKitToolkitWrapper, ToolkitRegistry
+    from openforcefield.topology import Molecule, Topology
+    from openforcefield.typing.engines.smirnoff import ForceField
 
 import parmed
-# from rdkit import Chem
+from rdkit import Chem
 import pickle
 import shutil
 import os
@@ -35,6 +39,12 @@ class BaseParameteriser():
 
     .. warning :: The base class should not be used directly
     """
+    try:
+        na_ion_pmd = parmed.load_file(get_data_filename("na.prmtop")) #FIXME #TODO
+        cl_ion_pmd = parmed.load_file(get_data_filename("cl.prmtop")) #FIXME #TODO
+    except ValueError:
+        print("Ion files cannot be located")
+    
     system_pmd = None
 
     @classmethod
@@ -72,13 +82,12 @@ class BaseParameteriser():
         ---------
         mol : rdkit.Chem.Mol
         """
-        from rdkit import Chem
         from rdkit.Chem import AllChem
 
-        cls.smiles = smiles
+        # cls.smiles = smiles
         mol = Chem.MolFromSmiles(smiles, sanitize = False)
         # mol = Chem.MolFromSmiles(smiles, sanitize = True)
-        mol.SetProp("_Name", cls.smiles)
+        mol.SetProp("_Name", smiles)
         mol.UpdatePropertyCache(strict = False)
         mol = Chem.AddHs(mol)
         Chem.GetSSSR(mol)
@@ -115,8 +124,7 @@ class BaseParameteriser():
 
     @classmethod
     def _rdkit_parameteriser(cls, mol, **kwargs):
-        from rdkit import Chem
-        from openforcefield.utils.toolkits import RDKitToolkitWrapper, ToolkitRegistry
+        # from openforcefield.utils.toolkits import RDKitToolkitWrapper, ToolkitRegistry
 
         """
         Creates a parameterised system from rdkit molecule
@@ -130,7 +138,11 @@ class BaseParameteriser():
             if hasattr(cls, "_ddec_charger"):
                 molecule.partial_charges = unit.Quantity(np.array(cls._ddec_charger(mol, cls.rf)), unit.elementary_charge)
             else:
-                from openforcefield.utils.toolkits import AmberToolsToolkitWrapper
+                try:
+                    from openff.toolkit.utils import AmberToolsToolkitWrapper
+
+                except ModuleNotFoundError:
+                    from openforcefield.utils.toolkits import AmberToolsToolkitWrapper
                 molecule.compute_partial_charges_am1bcc(toolkit_registry = AmberToolsToolkitWrapper())
 
         except Exception as e:
@@ -166,6 +178,7 @@ class BaseParameteriser():
         omm_top = PDBFile(pdb_filename).topology
         # ligand_pmd = parmed.openmm.topsystem.load_topology(topology.to_openmm(), openmm_system, molecule._conformers[0]) #XXX off topology does not keep atom names and resnames, use omm topology instead
         ligand_pmd = parmed.openmm.topsystem.load_topology(omm_top, openmm_system, molecule._conformers[0])
+        
         return pdb_filename, ligand_pmd
 
     @classmethod
@@ -224,7 +237,7 @@ class BaseParameteriser():
         from openeye import oeomega # Omega toolkit
         # from openeye import oequacpac #Charge toolkit
 
-        cls.smiles = smiles
+        # cls.smiles = smiles
         cls.omega = oeomega.OEOmega()
 
         # modified in accordance to recommendation on omega example script: https://docs.eyesopen.com/toolkits/cookbook/python/modeling/am1-bcc.html
@@ -250,7 +263,7 @@ class BaseParameteriser():
         # Generate conformers with Omega; keep only best conformer
         status = cls.omega(mol)
         if not status:
-            raise ValueError("Error generating conformers for %s." % (cls.smiles)) #TODO
+            raise ValueError("Error generating conformers for %s." % (smiles)) #TODO
         return mol
 
     # @classmethod
@@ -278,7 +291,10 @@ class BaseParameteriser():
         """
         try:
             molecule = Molecule.from_openeye(mol, allow_undefined_stereo = cls.allow_undefined_stereo)
-            from openforcefield.utils.toolkits import OpenEyeToolkitWrapper
+            try:
+                from openff.toolkit.utils import OpenEyeToolkitWrapper
+            except ModuleNotFoundError:
+                from openforcefield.utils.toolkits import OpenEyeToolkitWrapper
             molecule.compute_partial_charges_am1bcc(toolkit_registry = OpenEyeToolkitWrapper())
 
         except Exception as e:
@@ -457,7 +473,7 @@ class SolutionParameteriser(BaseParameteriser):
             Flag passed to OpenForceField `Molecule` object during parameterisation. When set to False an error is returned if SMILES have no/ambiguous steroechemistry. Default to False here as a sanity check for user.
         num_solvent : int
             The number of solvent molecules added into the system, only relevant if the solvent is not water. The default value is 100, but it is left for the user to determine the number of solvent molecule really needed to surrond the solute and create a big enough system.
-        density : simtk.unit
+        density : simtk.unit.quantity.Quantity
             Density of the solvent, default is None, only relevant if the solvent is not water
         default_padding : simtk.unit
             Dictates amount of water surronding the solute. Default is 1.25 nanometers, only relevant if water is the solvent.
@@ -472,7 +488,6 @@ class SolutionParameteriser(BaseParameteriser):
             The parameterised system as parmed object
         """
         #TODO currently only supports one solute molecule
-
         #sanity checks
         cls.smiles = smiles
         cls.allow_undefined_stereo = allow_undefined_stereo
@@ -491,7 +506,7 @@ class SolutionParameteriser(BaseParameteriser):
              raise ValueError("backend should be either 'openeye' or 'rdkit'") #XXX allow more options
         
 
-        if backend is "openeye":
+        if backend == "openeye":
             mol = cls._openeye_setter(smiles, **kwargs)
             # mol = cls._openeye_charger(mol)
             cls.pdb_filename, cls.ligand_pmd = cls._openeye_parameteriser(mol, **kwargs)
@@ -499,7 +514,7 @@ class SolutionParameteriser(BaseParameteriser):
                 mol = cls._openeye_setter(solvent_smiles, **kwargs)
                 cls.solvent_pdb_filename, cls.solvent_pmd = cls._openeye_parameteriser(mol, **kwargs)
 
-        elif backend is "rdkit":
+        elif backend == "rdkit":
             mol = cls._rdkit_setter(smiles, **kwargs)
             # mol = cls._rdkit_charger(mol)
             cls.pdb_filename, cls.ligand_pmd = cls._rdkit_parameteriser(mol, **kwargs)
@@ -513,9 +528,12 @@ class SolutionParameteriser(BaseParameteriser):
                 cls.solvent_pdb_filename, cls.solvent_pmd = cls._off_handler(kwargs["solvent_molecule"], **kwargs)
         
         if solvent_smiles is None:
-            return cls._via_helper_water(**kwargs)
+            cls._via_helper_water(**kwargs)
         else:
-            return cls._via_helper_other_solvent(density, num_solvent,**kwargs)
+            cls._via_helper_other_solvent(density, num_solvent,**kwargs)
+
+        return cls._add_counter_charges(**kwargs)
+
 
     @classmethod
     def _via_helper_other_solvent(cls, density, num_solvent, **kwargs):
@@ -584,6 +602,31 @@ class SolutionParameteriser(BaseParameteriser):
 
         cls.system_pmd.title = cls.smiles
         return cls.system_pmd
+    
+    @classmethod
+    def _add_counter_charges(cls, **kwargs):
+        """in case the solute molecule has a net charge, 
+        counter charge are added to the system in the form of ions,
+        Na+ or Cl-, in order to keep charge neutrality.
+        """
+
+        solute_charge = int(Chem.GetFormalCharge(Chem.MolFromSmiles(cls.smiles)))
+        if solute_charge == 0:
+            return cls.system_pmd
+        
+        if solute_charge > 0: #add -ve charge
+            ion_pmd = cls.cl_ion_pmd * solute_charge
+
+        elif solute_charge < 0: #add +ve charge
+            ion_pmd = cls.na_ion_pmd * abs(solute_charge)
+        
+        #replace the last few solvent molecules and replace them by the ions
+        ion_pmd.coordinates = np.array([np.mean(cls.system_pmd[":{}".format(len(cls.system_pmd.residues) - i)].coordinates, axis = 0) for i in range(abs(solute_charge))])
+        cls.system_pmd = cls.system_pmd[":1-{}".format(len(cls.system_pmd.residues) - abs(solute_charge))]
+        cls.system_pmd += ion_pmd
+        
+        return cls.system_pmd
+
 
     via_openeye = partialmethod(run, backend = "openeye")
     via_rdkit = partialmethod(run, backend = "rdkit")
