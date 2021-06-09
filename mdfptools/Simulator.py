@@ -34,7 +34,8 @@ class BaseSimulator():
     equil_steps = 50000  #100 ps
 
     @classmethod
-    def via_openmm(cls, parmed_obj, file_name, file_path = "./", platform = "CUDA", num_steps = 5000 * 500, write_out_freq = 5000, report_equilibration = False, report_production = False, **kwargs):
+    def via_openmm(cls, parmed_obj, file_name, file_path = "./", platform = "CUDA", num_steps = 5000 * 500, write_out_freq = 5000, report_equilibration = False, report_production = False,
+    constrain_all_bonds = True, **kwargs):
         """
         Runs simulation using OpenMM.
 
@@ -62,15 +63,28 @@ class BaseSimulator():
         pmd = parmed_obj
         path = '{}/{}.h5'.format(file_path, file_name)
 
-        system = pmd.createSystem(nonbondedMethod=app.PME, nonbondedCutoff=1*unit.nanometer, constraints=app.AllBonds)
+        constrain_what_bond = app.AllBonds if constrain_all_bonds else app.HBonds
+        ##################3
+        system = pmd.createSystem(nonbondedMethod=app.PME, nonbondedCutoff=1*unit.nanometer, constraints=constrain_what_bond)
+        # tmp_dir = tempfile.mkdtemp(dir = file_path) #FIXME just change this to debug dir in dubug mode
+        # pmd.save("{}/tmp.inpcrd".format(tmp_dir), overwrite = True)
+        # inpcrd = app.AmberInpcrdFile("{}/tmp.inpcrd".format(tmp_dir))
+        # pmd.save("{}/tmp.prmtop".format(tmp_dir), overwrite = True)
+        # prmtop = app.AmberPrmtopFile("{}/tmp.prmtop".format(tmp_dir))
+        # system = prmtop.createSystem(nonbondedMethod=app.PME, nonbondedCutoff=1*unit.nanometer, constraints=constrain_what_bond)
+        #####################3
 
         thermostat = AndersenThermostat(cls.temperature, 1/unit.picosecond)
         system.addForce(thermostat)
         barostat = MonteCarloBarostat(cls.pressure , cls.temperature)
         system.addForce(barostat)
         integrator = VerletIntegrator(cls.time_step)
-        simulation = Simulation(pmd.topology, system, integrator, platform)
+        # integrator = LangevinMiddleIntegrator(cls.temperature, 1/unit.picosecond, cls.time_step)
 
+        # simulation = Simulation(prmtop.topology, system, integrator)
+        # simulation.context.setPositions(inpcrd.positions)
+        # simulation.context.setPeriodicBoxVectors(*inpcrd.boxVectors)
+        simulation = Simulation(pmd.topology, system, integrator, platform)
         simulation.context.setPeriodicBoxVectors(*pmd.box_vectors)
         simulation.context.setPositions(pmd.positions)
         simulation.minimizeEnergy()
@@ -92,7 +106,7 @@ class BaseSimulator():
         del system
         del simulation
 
-        system = pmd.createSystem(nonbondedMethod=app.PME, nonbondedCutoff=1*unit.nanometer, constraints=app.AllBonds)
+        system = pmd.createSystem(nonbondedMethod=app.PME, nonbondedCutoff=1*unit.nanometer, constraints=constrain_what_bond)
 
         thermostat = AndersenThermostat(cls.temperature, 1/unit.picosecond)
         system.addForce(thermostat)
