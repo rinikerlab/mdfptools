@@ -23,7 +23,7 @@ setup(
     # Optional include package data to ship with your package
     # Comment out this line to prevent the files from being packaged with your software
     # Extend/modify the list to include/exclude other items as need be
-    package_data={'mdfptools': ["data/*.dat"]
+    package_data={'mdfptools': ["data/*.prmtop", "data/*.mdp"]
                   },
 
     # Additional entries you may want simply uncomment the lines you want and fill in the data
