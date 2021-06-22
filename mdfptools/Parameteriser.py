@@ -94,7 +94,6 @@ class BaseParameteriser():
         # params = AllChem.ETKDG()
         # params.enforceChirality = True
         AllChem.EmbedMolecule(mol, enforceChirality = True)
-
         ### TESTING
         # ref = Chem.MolFromSmiles('C-C-[C@H](-C)-[C@@H]1-N-C(=O)-[C@H](-C(-C)-C)-N(-C)-C(=O)-[C@H](-C-c2:c:[nH]:c3:c:c:c:c:c:2:3)-N-C(=O)-C-N(-C)-C(=O)-[C@H](-[C@@H](-C)-C-C)-N(-C)-C(=O)-[C@H](-C(-C)-C)-N-C(=O)-C-N(-C)-C(=O)-[C@H](-[C@@H](-C)-C-C)-N(-C)-C(=O)-[C@H](-C(-C)-C)-N(-C)-C(=O)-C-N(-C)-C(=O)-[C@H](-C(-C)-C)-N(-C)-C(=O)-[C@H](-C(-C)-C)-N(-C)-C-1=O')
 
@@ -454,7 +453,7 @@ class SolutionParameteriser(BaseParameteriser):
     try:
         solvent_pmd = parmed.load_file(get_data_filename("tip3p.prmtop")) #FIXME #TODO
     except ValueError:
-        print("Water file cannot be located")
+        raise ValueError("Water file cannot be located")
 
     # default_padding = 1.25 #nm
 
@@ -650,6 +649,7 @@ class VaccumParameteriser(BaseParameteriser):
         system_pmd : parmed.structure
             The parameterised system as parmed object
         """
+        cls.smiles = smiles
         cls.allow_undefined_stereo = allow_undefined_stereo
         mol = cls._openeye_setter(smiles, **kwargs)
         # mol = cls._openeye_charger(mol)
@@ -678,6 +678,7 @@ class VaccumParameteriser(BaseParameteriser):
         system_pmd : parmed.structure
             The parameterised system as parmed object
         """
+        cls.smiles = smiles
         cls.allow_undefined_stereo = allow_undefined_stereo
         mol = cls._rdkit_setter(smiles, **kwargs)
         # mol = cls._rdkit_charger(mol)
