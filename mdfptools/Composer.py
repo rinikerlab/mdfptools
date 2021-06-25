@@ -39,15 +39,15 @@ class MDFP():
         """
         self.order = mdfp_dict.pop("__order__", None)
         self.mdfp = mdfp_dict
-        self._metadata = {}
+        self.metadata = {}
 
-    @property
-    def metadata(self):
-        return self._metadata
+    # @property
+    # def metadata(self):
+    #     return self._metadata
     
-    @metadata.setter
-    def metadata(self, key, val):
-        self.metadata[key] = val
+    # @metadata.setter
+    # def metadata(self, key, val):
+    #     self.metadata[key] = val
 
 
     def get_mdfp(self, which_keys = None): #TODO update doc
