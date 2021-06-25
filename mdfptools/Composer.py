@@ -39,7 +39,7 @@ class MDFP():
         """
         self.order = mdfp_dict.pop("__order__", None)
         self.mdfp = mdfp_dict
-        self.metadata = {}
+        # self.metadata = {}
 
     @property
     def metadata(self):
