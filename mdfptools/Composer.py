@@ -23,14 +23,10 @@ class MDFP():
 
     .. todo::
         - method to give back the keys
-<<<<<<< HEAD
-        - store some metdadata?
+        - store some metdadata? e.g. which composer made it
         - Option to create a empty MDFP
         - load in experimental field
         - serialisation
-=======
-        - store some metdadata? e.g. which composer made it
->>>>>>> gmx
     """
     def __init__(self, mdfp_dict):
         """
@@ -43,6 +39,15 @@ class MDFP():
         """
         self.order = mdfp_dict.pop("__order__", None)
         self.mdfp = mdfp_dict
+        self.metadata = {}
+
+    @property
+    def metadata(self):
+        return self.metadata
+    
+    @metadata.setter
+    def metadata(self, key, name):
+        self.metadata[key] = name
 
     def get_mdfp(self, which_keys = None): #TODO update doc
         """
