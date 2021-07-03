@@ -330,9 +330,9 @@ class LiquidParameteriser(BaseParameteriser):
     """
 
     @classmethod  # TODO boxsize packing scale factor should be customary
-    def via_openeye(cls, smiles, density, allow_undefined_stereo=False, num_lig=100, **kwargs):
+    def run(cls, smiles, density, *, allow_undefined_stereo=False, num_lig=100, box_scaleup_factor=1.5, backend="openeye", **kwargs):
         """
-        Parameterisation perfromed via openeye toolkit.
+        Parameterisation perfromed either with openeye or rdkit toolkit.
 
         Parameters
         ----------------
@@ -344,45 +344,32 @@ class LiquidParameteriser(BaseParameteriser):
             Flag passed to OpenForceField `Molecule` object during parameterisation. When set to False an error is returned if SMILES have no/ambiguous steroechemistry. Default to False here as a sanity check for user.
         num_lig : int
             Number of replicates of the molecule
+        box_scaleup_factor : float
+            Dicatates the packed volume with respect to the volume estimated from density. Default is 1.5.
+        backend : str:
+            Either `rdkit` or `openeye`
 
         Returns
         ------------------
         system_pmd : parmed.structure
             The parameterised system as parmed object
         """
+        if backend not in ["openeye", "rdkit"]: #TODO allow openff_molecule option
+            raise ValueError("backend should be either 'openeye' or 'rdkit'")  # XXX allow more options
+
+        cls.box_scaleup_factor = box_scaleup_factor
         cls.allow_undefined_stereo = allow_undefined_stereo
-        mol = cls._openeye_setter(smiles, **kwargs)
-        # mol = cls._openeye_charger(mol)
-        cls.pdb_filename, cls.ligand_pmd = cls._openeye_parameteriser(mol, **kwargs)
+        cls.smiles = smiles
+        if backend == "openeye":
+            mol = cls._openeye_setter(smiles, **kwargs)
+            # mol = cls._openeye_charger(mol)
+            cls.pdb_filename, cls.ligand_pmd = cls._openeye_parameteriser(mol, **kwargs)
+        else:
+            mol = cls._rdkit_setter(smiles, **kwargs)
+            # mol = cls._openeye_charger(mol)
+            cls.pdb_filename, cls.ligand_pmd = cls._rdkit_parameteriser(mol, **kwargs)
         return cls._via_helper(density, num_lig, **kwargs)
 
-    @classmethod
-    def via_rdkit(cls, smiles, density, allow_undefined_stereo=False, num_lig=100, **kwargs):
-        # TODO !!!!!!!!!!!! approximating volume by density if not possible via rdkit at the moment.
-        """
-        Parameterisation perfromed via rdkit.
-
-        Parameters
-        ----------------
-        smiles : str
-            SMILES string of the molecule to be parametersied
-        density : simtk.unit
-            Density of liquid box
-        allow_undefined_stereo : bool
-            Flag passed to OpenForceField `Molecule` object during parameterisation. When set to False an error is returned if SMILES have no/ambiguous steroechemistry. Default to False here as a sanity check for user.
-        num_lig : int
-            Number of replicates of the molecule
-
-        Returns
-        ------------------
-        system_pmd : parmed.structure
-            The parameterised system as parmed object
-        """
-        cls.allow_undefined_stereo = allow_undefined_stereo
-        mol = cls._rdkit_setter(smiles, **kwargs)
-        # mol = cls._openeye_charger(mol)
-        cls.pdb_filename, cls.ligand_pmd = cls._rdkit_parameteriser(mol, **kwargs)
-        return cls._via_helper(density, num_lig, **kwargs)
 
     @classmethod
     def _via_helper(cls, density, num_lig, **kwargs):
@@ -410,10 +397,10 @@ class LiquidParameteriser(BaseParameteriser):
         try:  # TODO better error handling if openeye is not detected
             #box_size = packmol.approximate_volume_by_density([smiles], [num_lig], density=density, 		box_scaleup_factor=1.1, box_buffer=2.0)
             box_size = packmol.approximate_volume_by_density(
-                [cls.smiles], [num_lig], density=density, 		box_scaleup_factor=1.5, box_buffer=2.0)
+                [cls.smiles], [num_lig], density=density, 		box_scaleup_factor=cls.box_scaleup_factor, box_buffer=2.0)
         except:
             box_size = approximate_volume_by_density(
-                [cls.smiles], [num_lig], density=density, 		box_scaleup_factor=1.5, box_buffer=2.0)
+                [cls.smiles], [num_lig], density=density, 		box_scaleup_factor=box_scaleup_factor, box_buffer=2.0)
 
         packmol_out = packmol.pack_box([ligand_mdtraj], [num_lig], box_size=box_size)
 
@@ -429,7 +416,8 @@ class LiquidParameteriser(BaseParameteriser):
         cls.system_pmd.title = cls.smiles
         return cls.system_pmd
 
-    run = via_openeye
+    via_openeye = partialmethod(run, backend="openeye")
+    via_rdkit = partialmethod(run, backend="rdkit")
 
 
 class SolutionParameteriser(BaseParameteriser):
