@@ -366,6 +366,15 @@ class SolutionComposer(BaseComposer):
             SMILES string of the solute. If mdfptools.Parameteriser was used during parameterisation, then smiles is automatically obtained from the parmed_obj.
         xvg_file_path : #TODO
         """
+                
+        try:
+            for b in parmed_obj.bonds:
+                mdtraj_obj.topology.add_bond(mdtraj_obj.topology.atom(b.atom1.idx), mdtraj_obj.topology.atom(b.atom2.idx))
+            mdtraj_obj = mdtraj_obj.image_molecules()
+        except:
+            pass #XXX better handle
+            
+
         cls.kwargs = {"mdtraj_obj" : mdtraj_obj ,
                         "parmed_obj" : parmed_obj}
         
@@ -412,6 +421,14 @@ class LiquidComposer(BaseComposer):
         """
         cls.kwargs = {"mdtraj_obj" : mdtraj_obj ,
                         "parmed_obj" : parmed_obj}
+        
+        try:
+            for b in parmed_obj.bonds:
+                mdtraj_obj.topology.add_bond(mdtraj_obj.topology.atom(b.atom1.idx), mdtraj_obj.topology.atom(b.atom2.idx))
+            mdtraj_obj = mdtraj_obj.image_molecules()
+        except:
+            pass #XXX better handle
+
         cls.kwargs = {**cls.kwargs , **kwargs}
         if smiles is None:
             if parmed_obj.title != '': #try to obtain it from `parmed_obj`
@@ -453,6 +470,24 @@ class SolutionLiquidComposer(BaseComposer):
         smiles : str
             SMILES string of one copy of the solute. If mdfptools.Parameteriser was used during parameterisation, then smiles is automatically obtained from the parmed_obj.
         """
+
+                
+        try:
+            for b in solv_parmed_obj.bonds:
+                solv_mdtraj_obj.topology.add_bond(solv_mdtraj_obj.topology.atom(b.atom1.idx), solv_mdtraj_obj.topology.atom(b.atom2.idx))
+            solv_mdtraj_obj = solv_mdtraj_obj.image_molecules()
+        except:
+            pass #XXX better handle
+            
+                
+        try:
+            for b in liq_parmed_obj.bonds:
+                liq_mdtraj_obj.topology.add_bond(liq_mdtraj_obj.topology.atom(b.atom1.idx), liq_mdtraj_obj.topology.atom(b.atom2.idx))
+            liq_mdtraj_obj = liq_mdtraj_obj.image_molecules()
+        except:
+            pass #XXX better handle
+            
+
         cls.kwargs_solv = {"mdtraj_obj" : solv_mdtraj_obj ,
                         "parmed_obj" : solv_parmed_obj}
         cls.kwargs_liq = {"mdtraj_obj" : liq_mdtraj_obj ,
@@ -511,7 +546,13 @@ class Solution42BitsComposer(BaseComposer):
                 smiles = parmed_obj.title
             else:
                 raise ValueError("Input ParMed Object {} does not contain SMILES string, add SMILES as an additional variable".format(parmed_obj))
-
+        try:
+            for b in parmed_obj.bonds:
+                mdtraj_obj.topology.add_bond(mdtraj_obj.topology.atom(b.atom1.idx), mdtraj_obj.topology.atom(b.atom2.idx))
+            mdtraj_obj = mdtraj_obj.image_molecules()
+        except:
+            pass #XXX better handle
+            
         cls.kwargs = {"mdtraj_obj" : mdtraj_obj}
 
         if parmed_obj is not None:
