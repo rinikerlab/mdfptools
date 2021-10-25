@@ -56,7 +56,7 @@ Bibtex citations for the toolkit and the method are as follows:
 
 ### Copyright
 
-Copyright (c) 2018, Shuzhe Wang, Carmen Esposito
+Copyright (c) 2021, Greg Landrum, Shuzhe Wang, Carmen Esposito
 
 
 #### Acknowledgements

@@ -29,7 +29,7 @@ def read_pickle(path): return pickle.load(open(path, "rb"))
 
 ])
 def test_SolutionComposer(traj, pmd, smiles, xvg, ref):
-    assert np.allclose(SolutionComposer.run(traj, pmd, smiles, xvg).get_mdfp(), ref.get_mdfp())
+    assert np.allclose(SolutionComposer.run(traj, pmd, smiles, xvg).get_mdfp(), ref.get_mdfp(), rtol = 0.005)
 
 
 #################
@@ -38,11 +38,11 @@ def test_SolutionComposer(traj, pmd, smiles, xvg, ref):
 
 ])
 def test_LiquidComposer(traj, pmd, smiles, xvg, ref):
-    assert np.allclose(LiquidComposer.run(traj, pmd, smiles, xvg).get_mdfp(), ref.get_mdfp())
+    assert np.allclose(LiquidComposer.run(traj, pmd, smiles, xvg).get_mdfp(), ref.get_mdfp(), rtol = 0.005)
 
 #################
 @pytest.mark.parametrize(["traj", "pmd", "smiles", "xvg", "ref"], [
     (md.load("./data/water_gmx_example_1.xtc", top = "./data/water_gmx_example_1.gro"), None, "CCCCC1C2(CCN(CC2)C3(CCN(CC3)C(=O)C4=C(C=CC=C4C)C)C)OC(=O)N1CC5CCCCC5", "./data/water_gmx_example_1.xvg", read_pickle("./data/fp_water_gmx_example_1.pickle"))
 ])
 def test_Solution42BitsComposer(traj, pmd, smiles, xvg, ref):
-    assert np.allclose(Solution42BitsComposer.run(traj, pmd, smiles, xvg).get_mdfp(), ref.get_mdfp())
+    assert np.allclose(Solution42BitsComposer.run(traj, pmd, smiles, xvg).get_mdfp(), ref.get_mdfp(), rtol = 0.005)

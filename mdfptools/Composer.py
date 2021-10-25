@@ -332,6 +332,17 @@ class BaseComposer():
                  fp[i].append(func(tmp[~isnan(tmp)]))
         return fp
 
+    @classmethod
+    def _center_molecule(cls, mdtraj_obj, parmed_obj):
+        try:
+            for b in parmed_obj.bonds:
+                mdtraj_obj.topology.add_bond(mdtraj_obj.topology.atom(b.atom1.idx), mdtraj_obj.topology.atom(b.atom2.idx))
+            mdtraj_obj = mdtraj_obj.image_molecules()
+        except: #exception would occur when the solute molecule is too small (not enough anchor to perform centering)
+            pass #XXX better handle
+        return mdtraj_obj
+
+
 """
 class TrialSolutionComposer(BaseComposer):
     def __init__(cls, smiles, mdtraj_obj, parmed_obj, **kwargs):
@@ -367,13 +378,7 @@ class SolutionComposer(BaseComposer):
         xvg_file_path : #TODO
         """
                 
-        try:
-            for b in parmed_obj.bonds:
-                mdtraj_obj.topology.add_bond(mdtraj_obj.topology.atom(b.atom1.idx), mdtraj_obj.topology.atom(b.atom2.idx))
-            mdtraj_obj = mdtraj_obj.image_molecules()
-        except:
-            pass #XXX better handle
-            
+        mdtraj_obj = cls._center_molecule(mdtraj_obj, parmed_obj)
 
         cls.kwargs = {"mdtraj_obj" : mdtraj_obj ,
                         "parmed_obj" : parmed_obj}
@@ -422,12 +427,7 @@ class LiquidComposer(BaseComposer):
         cls.kwargs = {"mdtraj_obj" : mdtraj_obj ,
                         "parmed_obj" : parmed_obj}
         
-        try:
-            for b in parmed_obj.bonds:
-                mdtraj_obj.topology.add_bond(mdtraj_obj.topology.atom(b.atom1.idx), mdtraj_obj.topology.atom(b.atom2.idx))
-            mdtraj_obj = mdtraj_obj.image_molecules()
-        except:
-            pass #XXX better handle
+        mdtraj_obj = cls._center_molecule(mdtraj_obj, parmed_obj)
 
         cls.kwargs = {**cls.kwargs , **kwargs}
         if smiles is None:
@@ -472,20 +472,8 @@ class SolutionLiquidComposer(BaseComposer):
         """
 
                 
-        try:
-            for b in solv_parmed_obj.bonds:
-                solv_mdtraj_obj.topology.add_bond(solv_mdtraj_obj.topology.atom(b.atom1.idx), solv_mdtraj_obj.topology.atom(b.atom2.idx))
-            solv_mdtraj_obj = solv_mdtraj_obj.image_molecules()
-        except:
-            pass #XXX better handle
-            
-                
-        try:
-            for b in liq_parmed_obj.bonds:
-                liq_mdtraj_obj.topology.add_bond(liq_mdtraj_obj.topology.atom(b.atom1.idx), liq_mdtraj_obj.topology.atom(b.atom2.idx))
-            liq_mdtraj_obj = liq_mdtraj_obj.image_molecules()
-        except:
-            pass #XXX better handle
+        solv_mdtraj_obj = cls._center_molecule(solv_mdtraj_obj, solv_parmed_obj)
+        liq_mdtraj_obj = cls._center_molecule(liq_mdtraj_obj, liq_parmed_obj)
             
 
         cls.kwargs_solv = {"mdtraj_obj" : solv_mdtraj_obj ,
@@ -546,12 +534,8 @@ class Solution42BitsComposer(BaseComposer):
                 smiles = parmed_obj.title
             else:
                 raise ValueError("Input ParMed Object {} does not contain SMILES string, add SMILES as an additional variable".format(parmed_obj))
-        try:
-            for b in parmed_obj.bonds:
-                mdtraj_obj.topology.add_bond(mdtraj_obj.topology.atom(b.atom1.idx), mdtraj_obj.topology.atom(b.atom2.idx))
-            mdtraj_obj = mdtraj_obj.image_molecules()
-        except:
-            pass #XXX better handle
+
+        mdtraj_obj = cls._center_molecule(mdtraj_obj, parmed_obj)
             
         cls.kwargs = {"mdtraj_obj" : mdtraj_obj}
 
